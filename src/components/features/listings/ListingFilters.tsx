@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { ListingFilter, SortBy } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { SlidersHorizontal, X } from 'lucide-react';
+import { SlidersHorizontal, X, CheckCircle2, Circle } from 'lucide-react';
+import { Select } from '@/components/ui/Select';
 
 const SPECIES = ['Dog', 'Cat', 'Bird', 'Fish', 'Rabbit', 'Other'];
 const SORT_OPTIONS: { label: string; value: SortBy }[] = [
@@ -71,15 +72,12 @@ export function ListingFilters({ filters, onFilterChange }: ListingFiltersProps)
 
       {/* Sort + Advanced toggle row */}
       <div className="flex items-center gap-3">
-        <select
+        <Select
+          className="flex-1"
+          options={SORT_OPTIONS}
           value={filters.sortBy ?? 'Newest'}
-          onChange={(e) => onFilterChange({ sortBy: e.target.value as SortBy })}
-          className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 outline-none focus:ring-2 focus:ring-rose-400 focus:border-transparent"
-        >
-          {SORT_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </select>
+          onChange={(val) => onFilterChange({ sortBy: val as SortBy })}
+        />
 
         <button
           onClick={() => setShowAdvanced(!showAdvanced)}
@@ -133,27 +131,31 @@ export function ListingFilters({ filters, onFilterChange }: ListingFiltersProps)
             onChange={(e) => onFilterChange({ maxPrice: e.target.value ? Number(e.target.value) : undefined })}
           />
 
-          <div className="flex items-center gap-2 col-span-2 md:col-span-1">
-            <select
-              value={filters.gender ?? ''}
-              onChange={(e) => onFilterChange({ gender: e.target.value || undefined })}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 outline-none focus:ring-2 focus:ring-rose-400"
-            >
-              <option value="">Any Gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-            </select>
-          </div>
+          <Select
+            className="col-span-2 md:col-span-1"
+            options={[
+              { label: 'Any Gender', value: '' },
+              { label: 'Male',       value: 'Male' },
+              { label: 'Female',     value: 'Female' },
+            ]}
+            value={filters.gender ?? ''}
+            onChange={(val) => onFilterChange({ gender: val || undefined })}
+          />
 
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={!!filters.isVaccinated}
-              onChange={(e) => onFilterChange({ isVaccinated: e.target.checked || undefined })}
-              className="h-4 w-4 rounded accent-rose-500"
-            />
-            <span className="text-sm text-gray-700">Vaccinated only</span>
-          </label>
+          <button
+            onClick={() => onFilterChange({ isVaccinated: filters.isVaccinated ? undefined : true })}
+            className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-all duration-200 ${
+              filters.isVaccinated
+                ? 'border-rose-400 bg-rose-50 text-rose-600'
+                : 'border-gray-200 bg-white text-gray-500 hover:border-rose-300 hover:text-rose-500'
+            }`}
+          >
+            {filters.isVaccinated
+              ? <CheckCircle2 size={16} className="text-rose-500" />
+              : <Circle size={16} className="text-gray-300" />
+            }
+            Vaccinated only
+          </button>
         </div>
       )}
     </div>
