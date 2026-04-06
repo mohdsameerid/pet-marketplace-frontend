@@ -8,6 +8,7 @@ import { authApi } from '@/lib/api/auth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PawPrint } from 'lucide-react';
+import { PawPrintBg } from '@/components/ui/PawPrintBg';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
@@ -47,8 +48,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-rose-50 via-pink-50 to-white px-4">
-      <div className="w-full max-w-sm">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-rose-100 px-4">
+      {/* Paw print background decorations */}
+      <PawPrintBg size={200} opacity={0.15} className="absolute -top-10 -left-10 text-rose-300 rotate-[-20deg]" />
+      <PawPrintBg size={150} opacity={0.12} className="absolute top-10 right-8 text-rose-300 rotate-[25deg]" />
+      <PawPrintBg size={120} opacity={0.13} className="absolute bottom-10 left-10 text-rose-300 rotate-[15deg]" />
+      <PawPrintBg size={100} opacity={0.10} className="absolute bottom-20 right-16 text-rose-300 rotate-[-30deg]" />
+      <PawPrintBg size={80}  opacity={0.10} className="absolute top-1/2 left-4 text-rose-300 rotate-[40deg]" />
+      <PawPrintBg size={90}  opacity={0.10} className="absolute top-1/3 right-1/4 text-rose-300 rotate-[-15deg]" />
+      <div className="relative z-10 w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2">
