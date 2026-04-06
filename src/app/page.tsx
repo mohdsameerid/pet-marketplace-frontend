@@ -10,12 +10,12 @@ import { ShieldCheck, Search, MessageCircle } from 'lucide-react';
 // e.g. public/species/dog.jpg, public/species/cat.jpg, etc.
 // Falls back to emoji automatically if image is missing.
 const SPECIES = [
-  { name: 'Dogs',    emoji: '🐶', value: 'Dog',    bgColor: 'bg-amber-200',  imagePath: '/species/dog.jpg'    },
-  { name: 'Cats',    emoji: '🐱', value: 'Cat',    bgColor: 'bg-slate-600',  imagePath: '/species/cat.jpg'    },
-  { name: 'Rabbits', emoji: '🐰', value: 'Rabbit', bgColor: 'bg-pink-300',   imagePath: '/species/rabbit.jpg' },
-  { name: 'Birds',   emoji: '🐦', value: 'Bird',   bgColor: 'bg-sky-300',    imagePath: '/species/bird.jpg'   },
-  { name: 'Fish',    emoji: '🐠', value: 'Fish',   bgColor: 'bg-cyan-300',   imagePath: '/species/fish.jpg'   },
-  { name: 'Others',  emoji: '🐾', value: 'Other',  bgColor: 'bg-purple-200', imagePath: '/species/other.jpg'  },
+  { name: 'Dogs', emoji: '🐶', value: 'Dog', bgColor: 'bg-amber-200', imagePath: '/species/dog.jpg' },
+  { name: 'Cats', emoji: '🐱', value: 'Cat', bgColor: 'bg-slate-600', imagePath: '/species/cat.jpg' },
+  { name: 'Rabbits', emoji: '🐰', value: 'Rabbit', bgColor: 'bg-pink-300', imagePath: '/species/rabbit.jpg' },
+  { name: 'Birds', emoji: '🐦', value: 'Bird', bgColor: 'bg-sky-300', imagePath: '/species/bird.jpg' },
+  { name: 'Fish', emoji: '🐠', value: 'Fish', bgColor: 'bg-cyan-300', imagePath: '/species/fish.jpg' },
+  { name: 'Others', emoji: '🐾', value: 'Other', bgColor: 'bg-purple-200', imagePath: '/species/other.jpg' },
 ];
 
 const FEATURES = [
@@ -49,8 +49,8 @@ export default function HomePage() {
         <PawPrintBg size={160} opacity={0.15} className="absolute top-10 right-10 text-rose-300 rotate-[15deg]" />
         <PawPrintBg size={130} opacity={0.18} className="absolute bottom-4 left-1/4 text-rose-300 rotate-[10deg]" />
         <PawPrintBg size={100} opacity={0.14} className="absolute bottom-8 right-1/3 text-rose-300 rotate-[-25deg]" />
-        <PawPrintBg size={80}  opacity={0.12} className="absolute top-1/2 left-6 text-rose-300 rotate-[30deg]" />
-        <PawPrintBg size={90}  opacity={0.13} className="absolute top-6 left-1/2 text-rose-300 rotate-[-10deg]" />
+        <PawPrintBg size={80} opacity={0.12} className="absolute top-1/2 left-6 text-rose-300 rotate-[30deg]" />
+        <PawPrintBg size={90} opacity={0.13} className="absolute top-6 left-1/2 text-rose-300 rotate-[-10deg]" />
 
         {/* Content */}
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 text-center">
@@ -106,7 +106,7 @@ export default function HomePage() {
           </div>
 
           {/* Circular cards — scrollable on mobile */}
-          <div className="flex gap-6 overflow-x-auto pb-3 scrollbar-hide justify-start sm:justify-center">
+          <div className="flex gap-6 overflow-x-auto pb-3 pt-2 scrollbar-hide justify-start sm:justify-center">
             {SPECIES.map((s) => (
               <div key={s.name} className="shrink-0">
                 <SpeciesCard
