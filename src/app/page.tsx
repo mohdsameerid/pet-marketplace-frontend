@@ -66,20 +66,20 @@ export default function HomePage() {
             Thousands of ads with furry and feathered pets, let&apos;s give love to your little friend
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
-            <Link href="/listings">
+          <div className="mt-8 grid grid-cols-2 gap-3 inline-grid grid-cols-2 gap-3 mx-auto">
+            <Link href="/listings" className="block">
               <Button
                 size="lg"
-                className="w-full sm:w-auto bg-rose-500 text-white hover:bg-rose-600 shadow-md font-semibold"
+                className="w-full whitespace-nowrap bg-rose-500 text-white hover:bg-rose-600 shadow-md font-semibold"
               >
                 Get Started
               </Button>
             </Link>
-            <Link href="/register">
+            <Link href="/register" className="block">
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full sm:w-auto border-rose-400 text-rose-500 hover:bg-rose-50"
+                className="w-full whitespace-nowrap border-rose-400 text-rose-500 hover:bg-rose-50"
               >
                 Sign up Free
               </Button>
@@ -155,20 +155,20 @@ export default function HomePage() {
           <p className="text-gray-500 mb-7 text-lg">
             Join thousands of pet lovers across India
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/listings">
+          <div className="grid grid-cols-2 gap-3 inline-grid grid-cols-2 gap-3 mx-auto">
+            <Link href="/listings" className="block">
               <Button
                 size="lg"
-                className="w-full sm:w-auto bg-rose-500 text-white hover:bg-rose-600 font-semibold shadow-md"
+                className="w-full whitespace-nowrap bg-rose-500 text-white hover:bg-rose-600 font-semibold shadow-md"
               >
                 Browse Listings
               </Button>
             </Link>
-            <Link href="/register">
+            <Link href="/register" className="block">
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full sm:w-auto border-rose-400 text-rose-500 hover:bg-rose-50"
+                className="w-full whitespace-nowrap border-rose-400 text-rose-500 hover:bg-rose-50"
               >
                 List Your Pet
               </Button>
