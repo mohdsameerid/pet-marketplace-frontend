@@ -33,6 +33,8 @@ export default function LoginPage() {
       if (res.data.success) {
         login(res.data.data);
         toast.success(`Welcome back, ${res.data.data.fullName}!`);
+        // Wait 1.5s so the toast is visible before navigating away
+        await new Promise((r) => setTimeout(r, 1500));
         router.push('/listings');
       } else {
         toast.error(res.data.errors?.[0] ?? 'Login failed');

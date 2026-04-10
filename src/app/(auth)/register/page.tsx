@@ -48,6 +48,7 @@ export default function RegisterPage() {
       const res = await authApi.register(payload);
       if (res.data.success) {
         toast.success('Account created! An admin will verify it before you can log in.');
+        await new Promise((r) => setTimeout(r, 1500));
         router.push('/login');
       } else {
         toast.error(res.data.errors?.[0] ?? 'Registration failed');
