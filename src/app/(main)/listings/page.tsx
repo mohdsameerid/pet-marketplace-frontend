@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { useEffect, Suspense } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { ListingGrid } from '@/components/features/listings/ListingGrid';
@@ -23,6 +23,8 @@ function ListingsContent() {
   };
 
   const { data, isLoading, error, filters, updateFilters, goToPage } = useListings(initialFilters);
+
+  useEffect(() => { document.title = 'Browse Pets — PetMarketplace'; }, []);
 
   return (
     <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-8 space-y-6">

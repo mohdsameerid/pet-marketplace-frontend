@@ -1,4 +1,10 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+  title: 'PetMarketplace — Buy & Sell Pets in India',
+  description: 'Find and connect with verified pet sellers across India. Browse dogs, cats, birds, fish, rabbits and more.',
+};
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/Button';

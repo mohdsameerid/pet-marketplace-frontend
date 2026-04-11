@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
 import { listingsApi } from '@/lib/api/listings';
 import { favoritesApi } from '@/lib/api/favorites';
 import { inquiriesApi } from '@/lib/api/inquiries';
@@ -19,9 +21,21 @@ import { useAuth } from '@/context/AuthContext';
 import { formatPrice, formatAge, formatDate } from '@/lib/utils/format';
 import {
   Heart, MapPin, Eye, ShieldCheck, MessageCircle,
-  Star, ChevronLeft, CheckCircle2, XCircle
+  Star, ChevronLeft, CheckCircle2, XCircle, AlertTriangle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+const inquirySchema = Yup.object({
+  initialMessage: Yup.string()
+    .min(10, 'Message must be at least 10 characters')
+    .max(500, 'Message cannot exceed 500 characters')
+    .required('Message is required'),
+});
+
+const reviewSchema = Yup.object({
+  rating: Yup.number().min(1, 'Select a rating').max(5).required('Rating is required'),
+  comment: Yup.string().max(500, 'Comment cannot exceed 500 characters'),
+});
 
 export default function ListingDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -35,21 +49,27 @@ export default function ListingDetailPage() {
   const [isFavorited, setIsFavorited] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
   const [inquiryModal, setInquiryModal] = useState(false);
-  const [inquiryMessage, setInquiryMessage] = useState('');
-  const [inquiryLoading, setInquiryLoading] = useState(false);
+  const [inquirySent, setInquirySent] = useState(false);
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [hoverRating, setHoverRating] = useState(0);
+
+  const loadReviews = async (sellerId: string) => {
+    const revRes = await reviewsApi.getForSeller(sellerId);
+    setReviews(revRes.data.data);
+  };
 
   useEffect(() => {
     const load = async () => {
       try {
         const res = await listingsApi.getById(id);
         const l = res.data.data;
+        document.title = `${l.title} — PetMarketplace`;
         setListing(l);
 
         const mainIdx = l.images.findIndex((img) => img.isMain);
         if (mainIdx >= 0) setActiveImage(mainIdx);
 
-        const revRes = await reviewsApi.getForSeller(l.sellerId);
-        setReviews(revRes.data.data);
+        await loadReviews(l.sellerId);
 
         if (isAuthenticated) {
           const favRes = await favoritesApi.check(id);
@@ -85,23 +105,46 @@ export default function ListingDetailPage() {
     }
   };
 
-  const handleInquiry = async () => {
-    if (!inquiryMessage.trim()) { toast.error('Please enter a message'); return; }
-    setInquiryLoading(true);
-    try {
-      await inquiriesApi.create(id, inquiryMessage);
-      toast.success('Inquiry sent! The seller will reply soon.');
-      setInquiryModal(false);
-      setInquiryMessage('');
-    } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { errors?: string[] } } })?.response?.data?.errors?.[0] ??
-        'Failed to send inquiry';
-      toast.error(message);
-    } finally {
-      setInquiryLoading(false);
-    }
-  };
+  // Inquiry form
+  const inquiryFormik = useFormik({
+    initialValues: { initialMessage: '' },
+    validationSchema: inquirySchema,
+    onSubmit: async (values, { resetForm }) => {
+      try {
+        await inquiriesApi.create(id, values.initialMessage);
+        toast.success('Inquiry sent! The seller will reply soon.');
+        setInquiryModal(false);
+        setInquirySent(true);
+        resetForm();
+      } catch (err: unknown) {
+        const message =
+          (err as { response?: { data?: { errors?: string[] } } })?.response?.data?.errors?.[0] ??
+          'Failed to send inquiry';
+        toast.error(message);
+      }
+    },
+  });
+
+  // Review form
+  const reviewFormik = useFormik({
+    initialValues: { rating: 0, comment: '' },
+    validationSchema: reviewSchema,
+    onSubmit: async (values, { resetForm }) => {
+      if (!listing) return;
+      try {
+        await reviewsApi.create(listing.sellerId, values.rating, values.comment || undefined);
+        toast.success('Review submitted!');
+        setReviewSubmitted(true);
+        resetForm();
+        await loadReviews(listing.sellerId);
+      } catch (err: unknown) {
+        const message =
+          (err as { response?: { data?: { errors?: string[] } } })?.response?.data?.errors?.[0] ??
+          'Failed to submit review';
+        toast.error(message);
+      }
+    },
+  });
 
   if (isLoading) {
     return (
@@ -118,6 +161,9 @@ export default function ListingDetailPage() {
   if (!listing) return null;
 
   const canInquire = isAuthenticated && user?.role === 'Buyer' && listing.sellerId !== user?.id;
+  const hasAlreadyReviewed = reviews?.reviews.some((r) => r.reviewerId === user?.id) ?? false;
+  const canReview = isAuthenticated && user?.role === 'Buyer' && !hasAlreadyReviewed && !reviewSubmitted && listing.sellerId !== user?.id;
+  const isActive = listing.status === 'Active';
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -131,6 +177,19 @@ export default function ListingDetailPage() {
           <ChevronLeft size={16} />
           Back to listings
         </button>
+
+        {/* Status banner for non-Active listings */}
+        {!isActive && (
+          <div className="mb-6 flex items-center gap-3 rounded-2xl bg-orange-50 border border-orange-200 px-5 py-4">
+            <AlertTriangle size={20} className="shrink-0 text-orange-500" />
+            <div>
+              <p className="font-semibold text-orange-800">This listing is no longer available</p>
+              <p className="text-sm text-orange-600 mt-0.5">
+                Status: <span className="font-medium capitalize">{listing.status}</span>
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Images */}
@@ -245,11 +304,17 @@ export default function ListingDetailPage() {
             </div>
 
             {/* CTA */}
-            {canInquire && (
+            {canInquire && !inquirySent && isActive && (
               <Button onClick={() => setInquiryModal(true)} size="lg" className="w-full">
                 <MessageCircle size={18} />
                 Contact Seller
               </Button>
+            )}
+            {canInquire && inquirySent && (
+              <div className="rounded-xl bg-green-50 border border-green-200 p-4 text-center">
+                <CheckCircle2 size={20} className="text-green-500 mx-auto mb-1" />
+                <p className="text-sm font-medium text-green-700">Inquiry sent! Check your inquiries page for replies.</p>
+              </div>
             )}
             {!isAuthenticated && (
               <Link href="/login">
@@ -287,11 +352,7 @@ export default function ListingDetailPage() {
                     </div>
                     <div className="flex gap-0.5">
                       {Array.from({ length: 5 }).map((_, i) => (
-                        <Star
-                          key={i}
-                          size={13}
-                          className={i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'}
-                        />
+                        <Star key={i} size={13} className={i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'} />
                       ))}
                     </div>
                   </div>
@@ -303,30 +364,103 @@ export default function ListingDetailPage() {
             </div>
           </div>
         )}
+
+        {/* Review form — Buyers only, one per seller */}
+        {canReview && (
+          <div className="mt-10 rounded-2xl bg-white border border-gray-100 shadow-sm p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Rate this Seller</h2>
+            <form onSubmit={reviewFormik.handleSubmit} className="space-y-4">
+              {/* Star rating */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-2">Rating</label>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      onClick={() => reviewFormik.setFieldValue('rating', star)}
+                      className="transition-transform hover:scale-110"
+                    >
+                      <Star
+                        size={28}
+                        className={
+                          star <= (hoverRating || reviewFormik.values.rating)
+                            ? 'fill-yellow-400 text-yellow-400'
+                            : 'text-gray-200'
+                        }
+                      />
+                    </button>
+                  ))}
+                </div>
+                {reviewFormik.touched.rating && reviewFormik.errors.rating && (
+                  <p className="mt-1 text-xs text-red-500">{reviewFormik.errors.rating}</p>
+                )}
+              </div>
+
+              {/* Comment */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1">
+                  Comment <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <textarea
+                  name="comment"
+                  value={reviewFormik.values.comment}
+                  onChange={reviewFormik.handleChange}
+                  rows={3}
+                  maxLength={500}
+                  placeholder="Share your experience with this seller..."
+                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-rose-400 focus:border-transparent resize-none"
+                />
+                {reviewFormik.touched.comment && reviewFormik.errors.comment && (
+                  <p className="mt-1 text-xs text-red-500">{reviewFormik.errors.comment}</p>
+                )}
+                <p className="text-xs text-gray-400 text-right mt-0.5">{reviewFormik.values.comment.length}/500</p>
+              </div>
+
+              <Button type="submit" isLoading={reviewFormik.isSubmitting} disabled={reviewFormik.values.rating === 0}>
+                Submit Review
+              </Button>
+            </form>
+          </div>
+        )}
       </main>
 
       {/* Inquiry Modal */}
-      <Modal isOpen={inquiryModal} onClose={() => setInquiryModal(false)} title="Contact Seller">
-        <div className="space-y-4">
+      <Modal isOpen={inquiryModal} onClose={() => { setInquiryModal(false); inquiryFormik.resetForm(); }} title="Contact Seller">
+        <form onSubmit={inquiryFormik.handleSubmit} className="space-y-4">
           <p className="text-sm text-gray-600">
             Send a message about <span className="font-medium text-gray-900">{listing.title}</span>
           </p>
-          <textarea
-            value={inquiryMessage}
-            onChange={(e) => setInquiryMessage(e.target.value)}
-            placeholder="Hi, I'm interested in your pet. Is it still available?"
-            rows={4}
-            maxLength={1000}
-            className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-rose-400 focus:border-transparent resize-none"
-          />
-          <p className="text-xs text-gray-400 text-right">{inquiryMessage.length}/1000</p>
+          <div>
+            <textarea
+              name="initialMessage"
+              value={inquiryFormik.values.initialMessage}
+              onChange={inquiryFormik.handleChange}
+              onBlur={inquiryFormik.handleBlur}
+              placeholder="Hi, I'm interested in your pet. Is it still available?"
+              rows={4}
+              className={`w-full rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:border-transparent resize-none ${
+                inquiryFormik.touched.initialMessage && inquiryFormik.errors.initialMessage
+                  ? 'border-red-400 bg-red-50 focus:ring-red-300'
+                  : 'border-gray-200 focus:ring-rose-400'
+              }`}
+            />
+            {inquiryFormik.touched.initialMessage && inquiryFormik.errors.initialMessage && (
+              <p className="mt-1 text-xs text-red-500">{inquiryFormik.errors.initialMessage}</p>
+            )}
+            <p className="text-xs text-gray-400 text-right mt-0.5">{inquiryFormik.values.initialMessage.length}/500</p>
+          </div>
           <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setInquiryModal(false)} className="flex-1">Cancel</Button>
-            <Button onClick={handleInquiry} isLoading={inquiryLoading} className="flex-1">
+            <Button type="button" variant="outline" onClick={() => { setInquiryModal(false); inquiryFormik.resetForm(); }} className="flex-1">
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={inquiryFormik.isSubmitting} className="flex-1">
               Send Message
             </Button>
           </div>
-        </div>
+        </form>
       </Modal>
 
       <Footer />
