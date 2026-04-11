@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/api/auth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { PawPrint } from 'lucide-react';
+import { PawPrint, ShoppingBag, Store, Eye, EyeOff } from 'lucide-react';
 import { PawPrintBg } from '@/components/ui/PawPrintBg';
 import toast from 'react-hot-toast';
 
@@ -18,21 +18,55 @@ export default function RegisterPage() {
     fullName: '',
     email: '',
     password: '',
+    confirmPassword: '',
     phoneNumber: '',
     city: '',
     role: 'Buyer' as Role,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!form.fullName.trim()) {
+      newErrors.fullName = 'Full name is required';
+    } else if (form.fullName.trim().length < 2) {
+      newErrors.fullName = 'Name must be at least 2 characters';
+    }
+
+    if (!form.email) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      newErrors.email = 'Enter a valid email address';
+    }
+
+    if (!form.password) {
+      newErrors.password = 'Password is required';
+    } else if (form.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    } else if (!/[A-Z]/.test(form.password)) {
+      newErrors.password = 'Password must contain at least 1 uppercase letter';
+    } else if (!/[0-9]/.test(form.password)) {
+      newErrors.password = 'Password must contain at least 1 number';
+    }
+
+    if (!form.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (form.password !== form.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    return newErrors;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
-    const newErrors: Record<string, string> = {};
-    if (!form.fullName.trim()) newErrors.fullName = 'Full name is required';
-    if (!form.email) newErrors.email = 'Email is required';
-    if (!form.password || form.password.length < 6) newErrors.password = 'Password must be at least 6 characters';
+    const newErrors = validate();
     if (Object.keys(newErrors).length) { setErrors(newErrors); return; }
 
     setIsLoading(true);
@@ -63,15 +97,21 @@ export default function RegisterPage() {
     }
   };
 
+  const roles: { value: Role; label: string; sub: string; Icon: typeof ShoppingBag }[] = [
+    { value: 'Buyer', label: 'Buy / Adopt', sub: 'Find a pet', Icon: ShoppingBag },
+    { value: 'Seller', label: 'Sell / List', sub: 'List a pet', Icon: Store },
+  ];
+
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-rose-100 px-4 py-12">
       {/* Paw print background decorations */}
-      <PawPrintBg size={200} opacity={0.15} className="absolute -top-10 -left-10 text-rose-300 rotate-[-20deg]" />
-      <PawPrintBg size={150} opacity={0.12} className="absolute top-10 right-8 text-rose-300 rotate-[25deg]" />
-      <PawPrintBg size={120} opacity={0.13} className="absolute bottom-10 left-10 text-rose-300 rotate-[15deg]" />
-      <PawPrintBg size={100} opacity={0.10} className="absolute bottom-20 right-16 text-rose-300 rotate-[-30deg]" />
-      <PawPrintBg size={80}  opacity={0.10} className="absolute top-1/2 left-4 text-rose-300 rotate-[40deg]" />
-      <PawPrintBg size={90}  opacity={0.10} className="absolute top-1/3 right-1/4 text-rose-300 rotate-[-15deg]" />
+      <PawPrintBg size={200} opacity={0.12} className="absolute -top-10 -left-10 text-rose-300 rotate-[-20deg]" />
+      <PawPrintBg size={150} opacity={0.10} className="absolute top-10 right-8 text-rose-300 rotate-[25deg]" />
+      <PawPrintBg size={120} opacity={0.10} className="absolute bottom-10 left-10 text-rose-300 rotate-[15deg]" />
+      <PawPrintBg size={100} opacity={0.08} className="absolute bottom-20 right-16 text-rose-300 rotate-[-30deg]" />
+      <PawPrintBg size={80}  opacity={0.08} className="absolute top-1/2 left-4 text-rose-300 rotate-[40deg]" />
+      <PawPrintBg size={90}  opacity={0.08} className="absolute top-1/3 right-1/4 text-rose-300 rotate-[-15deg]" />
+
       <div className="relative z-10 w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -89,19 +129,21 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 space-y-4">
           {/* Role toggle */}
-          <div className="flex rounded-xl overflow-hidden border border-gray-200">
-            {(['Buyer', 'Seller'] as Role[]).map((role) => (
+          <div className="grid grid-cols-2 gap-2">
+            {roles.map(({ value, label, sub, Icon }) => (
               <button
-                key={role}
+                key={value}
                 type="button"
-                onClick={() => setForm({ ...form, role })}
-                className={`flex-1 py-2 text-sm font-medium transition-colors ${
-                  form.role === role
-                    ? 'bg-rose-500 text-white'
-                    : 'bg-white text-gray-600 hover:bg-rose-50 hover:text-rose-600'
+                onClick={() => setForm({ ...form, role: value })}
+                className={`flex flex-col items-center gap-1 rounded-xl border-2 py-3 px-2 text-sm font-medium transition-all ${
+                  form.role === value
+                    ? 'border-rose-500 bg-rose-50 text-rose-600'
+                    : 'border-gray-200 bg-white text-gray-500 hover:border-rose-200 hover:text-rose-500'
                 }`}
               >
-                {role === 'Buyer' ? '🐾 Buyer' : '🏪 Seller'}
+                <Icon size={20} />
+                <span className="font-semibold">{label}</span>
+                <span className="text-xs font-normal opacity-70">{sub}</span>
               </button>
             ))}
           </div>
@@ -123,29 +165,84 @@ export default function RegisterPage() {
             error={errors.email}
             required
           />
-          <Input
-            label="Password"
-            type="password"
-            placeholder="••••••••"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            error={errors.password}
-            helperText="At least 6 characters"
-            required
-          />
-          <Input
-            label="Phone Number"
-            type="tel"
-            placeholder="+91 98765 43210"
-            value={form.phoneNumber}
-            onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
-          />
-          <Input
-            label="City"
-            placeholder="Mumbai"
-            value={form.city}
-            onChange={(e) => setForm({ ...form, city: e.target.value })}
-          />
+
+          {/* Password with show/hide */}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-gray-700">
+              Password <span className="text-rose-500 ml-1">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                suppressHydrationWarning
+                className={`w-full rounded-xl border px-4 py-2.5 pr-10 text-sm outline-none transition-all duration-200 placeholder:text-gray-400 focus:ring-2 focus:border-transparent ${
+                  errors.password
+                    ? 'border-red-400 bg-red-50 focus:ring-red-300'
+                    : 'border-gray-200 bg-white hover:border-gray-300 focus:ring-rose-400'
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            {errors.password
+              ? <p className="text-xs text-red-500">{errors.password}</p>
+              : <p className="text-xs text-gray-400">Min 6 chars, 1 uppercase, 1 number</p>
+            }
+          </div>
+
+          {/* Confirm Password with show/hide */}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-gray-700">
+              Confirm Password <span className="text-rose-500 ml-1">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type={showConfirm ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={form.confirmPassword}
+                onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                suppressHydrationWarning
+                className={`w-full rounded-xl border px-4 py-2.5 pr-10 text-sm outline-none transition-all duration-200 placeholder:text-gray-400 focus:ring-2 focus:border-transparent ${
+                  errors.confirmPassword
+                    ? 'border-red-400 bg-red-50 focus:ring-red-300'
+                    : 'border-gray-200 bg-white hover:border-gray-300 focus:ring-rose-400'
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            {errors.confirmPassword && <p className="text-xs text-red-500">{errors.confirmPassword}</p>}
+          </div>
+
+          {/* Phone and City side by side */}
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Phone"
+              type="tel"
+              placeholder="+91 98765 43210"
+              value={form.phoneNumber}
+              onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
+            />
+            <Input
+              label="City"
+              placeholder="Mumbai"
+              value={form.city}
+              onChange={(e) => setForm({ ...form, city: e.target.value })}
+            />
+          </div>
 
           <Button type="submit" isLoading={isLoading} className="w-full">
             Create Account

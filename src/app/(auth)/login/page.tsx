@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { authApi } from '@/lib/api/auth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { PawPrint } from 'lucide-react';
+import { PawPrint, Eye, EyeOff } from 'lucide-react';
 import { PawPrintBg } from '@/components/ui/PawPrintBg';
 import toast from 'react-hot-toast';
 
@@ -17,14 +17,28 @@ export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    if (!form.email) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      newErrors.email = 'Enter a valid email address';
+    }
+    if (!form.password) {
+      newErrors.password = 'Password is required';
+    } else if (form.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    return newErrors;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
-    const newErrors: Record<string, string> = {};
-    if (!form.email) newErrors.email = 'Email is required';
-    if (!form.password) newErrors.password = 'Password is required';
+    const newErrors = validate();
     if (Object.keys(newErrors).length) { setErrors(newErrors); return; }
 
     setIsLoading(true);
@@ -33,9 +47,11 @@ export default function LoginPage() {
       if (res.data.success) {
         login(res.data.data);
         toast.success(`Welcome back, ${res.data.data.fullName}!`);
-        // Wait 1.5s so the toast is visible before navigating away
-        await new Promise((r) => setTimeout(r, 1500));
-        router.push('/listings');
+        if (res.data.data.role === 'Admin') {
+          router.push('/admin');
+        } else {
+          router.push('/');
+        }
       } else {
         toast.error(res.data.errors?.[0] ?? 'Login failed');
       }
@@ -52,12 +68,13 @@ export default function LoginPage() {
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-rose-100 px-4">
       {/* Paw print background decorations */}
-      <PawPrintBg size={200} opacity={0.15} className="absolute -top-10 -left-10 text-rose-300 rotate-[-20deg]" />
-      <PawPrintBg size={150} opacity={0.12} className="absolute top-10 right-8 text-rose-300 rotate-[25deg]" />
-      <PawPrintBg size={120} opacity={0.13} className="absolute bottom-10 left-10 text-rose-300 rotate-[15deg]" />
-      <PawPrintBg size={100} opacity={0.10} className="absolute bottom-20 right-16 text-rose-300 rotate-[-30deg]" />
-      <PawPrintBg size={80}  opacity={0.10} className="absolute top-1/2 left-4 text-rose-300 rotate-[40deg]" />
-      <PawPrintBg size={90}  opacity={0.10} className="absolute top-1/3 right-1/4 text-rose-300 rotate-[-15deg]" />
+      <PawPrintBg size={200} opacity={0.12} className="absolute -top-10 -left-10 text-rose-300 rotate-[-20deg]" />
+      <PawPrintBg size={150} opacity={0.10} className="absolute top-10 right-8 text-rose-300 rotate-[25deg]" />
+      <PawPrintBg size={120} opacity={0.10} className="absolute bottom-10 left-10 text-rose-300 rotate-[15deg]" />
+      <PawPrintBg size={100} opacity={0.08} className="absolute bottom-20 right-16 text-rose-300 rotate-[-30deg]" />
+      <PawPrintBg size={80}  opacity={0.08} className="absolute top-1/2 left-4 text-rose-300 rotate-[40deg]" />
+      <PawPrintBg size={90}  opacity={0.08} className="absolute top-1/3 right-1/4 text-rose-300 rotate-[-15deg]" />
+
       <div className="relative z-10 w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -83,15 +100,36 @@ export default function LoginPage() {
             error={errors.email}
             required
           />
-          <Input
-            label="Password"
-            type="password"
-            placeholder="••••••••"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            error={errors.password}
-            required
-          />
+
+          {/* Password with show/hide toggle */}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-gray-700">
+              Password <span className="text-rose-500 ml-1">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                suppressHydrationWarning
+                className={`w-full rounded-xl border px-4 py-2.5 pr-10 text-sm outline-none transition-all duration-200 placeholder:text-gray-400 focus:ring-2 focus:border-transparent ${
+                  errors.password
+                    ? 'border-red-400 bg-red-50 focus:ring-red-300'
+                    : 'border-gray-200 bg-white hover:border-gray-300 focus:ring-rose-400'
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
+          </div>
+
           <Button type="submit" isLoading={isLoading} className="w-full">
             Log in
           </Button>
@@ -103,6 +141,16 @@ export default function LoginPage() {
             Sign up
           </Link>
         </p>
+
+        {/* Dev hint box */}
+        <div className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs text-gray-600">
+          <p className="font-semibold text-rose-700 mb-2">Test credentials</p>
+          <div className="space-y-1 font-mono">
+            <p><span className="text-gray-500">Admin:</span> admin@test.com / Test@123</p>
+            <p><span className="text-gray-500">Seller:</span> seller@test.com / Test@123</p>
+            <p><span className="text-gray-500">Buyer:</span> buyer@test.com / Test@123</p>
+          </div>
+        </div>
       </div>
     </div>
   );
