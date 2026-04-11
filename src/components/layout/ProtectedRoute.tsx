@@ -7,10 +7,10 @@ import { Spinner } from '@/components/ui/Spinner';
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  requiredRole?: 'Buyer' | 'Seller' | 'Admin';
+  allowedRoles?: string[];
 }
 
-export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
@@ -18,10 +18,10 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
     if (!isLoading && !isAuthenticated) {
       router.replace('/login');
     }
-    if (!isLoading && isAuthenticated && requiredRole && user?.role !== requiredRole) {
+    if (!isLoading && isAuthenticated && allowedRoles && user?.role && !allowedRoles.includes(user.role)) {
       router.replace('/');
     }
-  }, [isLoading, isAuthenticated, user, requiredRole, router]);
+  }, [isLoading, isAuthenticated, user, allowedRoles, router]);
 
   if (isLoading) {
     return (
@@ -32,7 +32,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   }
 
   if (!isAuthenticated) return null;
-  if (requiredRole && user?.role !== requiredRole) return null;
+  if (allowedRoles && user?.role && !allowedRoles.includes(user.role)) return null;
 
   return <>{children}</>;
 }

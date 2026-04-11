@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { User, AuthResponse } from '@/types';
 import { tokenUtils, userUtils } from '@/lib/utils/auth';
 import { authApi } from '@/lib/api/auth';
@@ -17,6 +18,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -36,6 +38,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initAuth();
   }, []);
 
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setUser(null);
+      router.push('/login');
+    };
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+  }, [router]);
+
   const login = (response: AuthResponse) => {
     tokenUtils.set(response.token);
     const userData: User = {
@@ -53,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     tokenUtils.remove();
     setUser(null);
-    window.location.href = '/';
+    router.push('/');
   };
 
   const refreshUser = async () => {

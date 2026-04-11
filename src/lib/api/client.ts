@@ -26,9 +26,13 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
+        // Skip redirect for auth endpoints — let the calling code handle the error
+        const isAuthEndpoint = error.config?.url?.includes('/api/auth/');
+        if (!isAuthEndpoint) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+        }
       }
     }
     return Promise.reject(error);
