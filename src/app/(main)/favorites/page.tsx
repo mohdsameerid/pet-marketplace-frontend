@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
-import { AuthGuard } from '@/components/features/auth/AuthGuard';
+import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { Pagination } from '@/components/ui/Pagination';
@@ -47,7 +47,7 @@ export default function FavoritesPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
-      <AuthGuard>
+      <ProtectedRoute allowedRoles={['Buyer']}>
         <main className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-8">
           <div className="flex items-center gap-2 mb-6">
             <Heart size={22} className="text-rose-500" />
@@ -112,7 +112,7 @@ export default function FavoritesPage() {
             </div>
           )}
         </main>
-      </AuthGuard>
+      </ProtectedRoute>
       <Footer />
     </div>
   );
