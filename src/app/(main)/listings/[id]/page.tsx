@@ -63,6 +63,7 @@ export default function ListingDetailPage() {
       try {
         const res = await listingsApi.getById(id);
         const l = res.data.data;
+        document.title = `${l.title} — PetMarketplace`;
         setListing(l);
 
         const mainIdx = l.images.findIndex((img) => img.isMain);

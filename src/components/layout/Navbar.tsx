@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/hooks/useNotifications';
-import { Bell, Heart, MessageCircle, LayoutDashboard, LogOut, Menu, X } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { Bell, Heart, MessageCircle, LayoutDashboard, LogOut, Menu, X, User } from 'lucide-react';
 import { useState } from 'react';
 import { PawPrintBg } from '@/components/ui/PawPrintBg';
 
@@ -16,7 +17,26 @@ const roleBadgeClass: Record<string, string> = {
 export function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const { unreadCount } = useNotifications();
+  const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const navLink = (href: string, exact = false) => {
+    const isActive = exact ? pathname === href : pathname.startsWith(href);
+    return `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+      isActive
+        ? 'text-rose-600 bg-rose-50'
+        : 'text-gray-600 hover:bg-rose-50 hover:text-rose-600'
+    }`;
+  };
+
+  const iconLink = (href: string) => {
+    const isActive = pathname.startsWith(href);
+    return `relative rounded-lg p-2 transition-colors ${
+      isActive
+        ? 'text-rose-600 bg-rose-50'
+        : 'text-gray-600 hover:bg-rose-50 hover:text-rose-500'
+    }`;
+  };
 
   return (
     <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm">
@@ -35,10 +55,7 @@ export function Navbar() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-1">
-            <Link
-              href="/listings"
-              className="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-rose-50 hover:text-rose-600 transition-colors"
-            >
+            <Link href="/listings" className={navLink('/listings')}>
               Browse Pets
             </Link>
 
@@ -46,32 +63,20 @@ export function Navbar() {
               <>
                 {/* Favorites — Buyers only */}
                 {user?.role === 'Buyer' && (
-                  <Link
-                    href="/favorites"
-                    className="relative rounded-lg p-2 text-gray-600 hover:bg-rose-50 hover:text-rose-500 transition-colors"
-                    title="Favorites"
-                  >
+                  <Link href="/favorites" className={iconLink('/favorites')} title="Favorites">
                     <Heart size={20} />
                   </Link>
                 )}
 
                 {/* Inquiries — Buyers and Sellers */}
                 {(user?.role === 'Buyer' || user?.role === 'Seller') && (
-                  <Link
-                    href="/inquiries"
-                    className="relative rounded-lg p-2 text-gray-600 hover:bg-rose-50 hover:text-rose-500 transition-colors"
-                    title="Inquiries"
-                  >
+                  <Link href="/inquiries" className={iconLink('/inquiries')} title="Inquiries">
                     <MessageCircle size={20} />
                   </Link>
                 )}
 
                 {/* Notifications bell */}
-                <Link
-                  href="/notifications"
-                  className="relative rounded-lg p-2 text-gray-600 hover:bg-rose-50 hover:text-rose-500 transition-colors"
-                  title="Notifications"
-                >
+                <Link href="/notifications" className={iconLink('/notifications')} title="Notifications">
                   <Bell size={20} />
                   {unreadCount > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
@@ -82,20 +87,24 @@ export function Navbar() {
 
                 {/* Dashboard — Sellers and Admins */}
                 {(user?.role === 'Seller' || user?.role === 'Admin') && (
-                  <Link
-                    href="/dashboard"
-                    className="rounded-lg p-2 text-gray-600 hover:bg-rose-50 hover:text-rose-500 transition-colors"
-                    title="Dashboard"
-                  >
+                  <Link href="/dashboard" className={iconLink('/dashboard')} title="Dashboard">
                     <LayoutDashboard size={20} />
                   </Link>
                 )}
 
                 <div className="mx-2 h-5 w-px bg-gray-200" />
 
-                {/* User info + role badge */}
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-100 text-rose-600 text-sm font-semibold">
+                {/* User avatar — links to profile */}
+                <Link
+                  href="/profile"
+                  className={`flex items-center gap-2 rounded-lg px-2 py-1 transition-colors ${
+                    pathname === '/profile' ? 'bg-rose-50' : 'hover:bg-gray-50'
+                  }`}
+                  title="My Profile"
+                >
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${
+                    pathname === '/profile' ? 'bg-rose-500 text-white' : 'bg-rose-100 text-rose-600'
+                  }`}>
                     {user?.fullName?.charAt(0).toUpperCase()}
                   </div>
                   <div className="hidden lg:flex flex-col leading-none">
@@ -106,7 +115,7 @@ export function Navbar() {
                       </span>
                     )}
                   </div>
-                </div>
+                </Link>
 
                 <button
                   onClick={logout}
@@ -147,14 +156,22 @@ export function Navbar() {
       {/* Mobile Menu */}
       {mobileOpen && (
         <div className="md:hidden border-t border-gray-100 bg-white px-4 py-3 space-y-1">
-          <Link href="/listings" className="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-rose-50 hover:text-rose-600">
+          <Link
+            href="/listings"
+            onClick={() => setMobileOpen(false)}
+            className={`block rounded-lg px-3 py-2 text-sm ${pathname.startsWith('/listings') ? 'bg-rose-50 text-rose-600 font-medium' : 'text-gray-700 hover:bg-rose-50 hover:text-rose-600'}`}
+          >
             Browse Pets
           </Link>
           {isAuthenticated ? (
             <>
-              {/* Role badge in mobile */}
-              <div className="flex items-center gap-2 px-3 py-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-100 text-rose-600 text-sm font-semibold">
+              {/* Profile link in mobile */}
+              <Link
+                href="/profile"
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-2 rounded-lg px-3 py-2 ${pathname === '/profile' ? 'bg-rose-50' : 'hover:bg-gray-50'}`}
+              >
+                <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${pathname === '/profile' ? 'bg-rose-500 text-white' : 'bg-rose-100 text-rose-600'}`}>
                   {user?.fullName?.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -165,22 +182,44 @@ export function Navbar() {
                     </span>
                   )}
                 </div>
-              </div>
+              </Link>
 
               {user?.role === 'Buyer' && (
-                <Link href="/favorites" className="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-rose-50">Favorites</Link>
+                <Link
+                  href="/favorites"
+                  onClick={() => setMobileOpen(false)}
+                  className={`block rounded-lg px-3 py-2 text-sm ${pathname.startsWith('/favorites') ? 'bg-rose-50 text-rose-600 font-medium' : 'text-gray-700 hover:bg-rose-50'}`}
+                >
+                  Favorites
+                </Link>
               )}
               {(user?.role === 'Buyer' || user?.role === 'Seller') && (
-                <Link href="/inquiries" className="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-rose-50">Inquiries</Link>
+                <Link
+                  href="/inquiries"
+                  onClick={() => setMobileOpen(false)}
+                  className={`block rounded-lg px-3 py-2 text-sm ${pathname.startsWith('/inquiries') ? 'bg-rose-50 text-rose-600 font-medium' : 'text-gray-700 hover:bg-rose-50'}`}
+                >
+                  Inquiries
+                </Link>
               )}
-              <Link href="/notifications" className="flex items-center justify-between rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-rose-50">
+              <Link
+                href="/notifications"
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm ${pathname.startsWith('/notifications') ? 'bg-rose-50 text-rose-600 font-medium' : 'text-gray-700 hover:bg-rose-50'}`}
+              >
                 Notifications
                 {unreadCount > 0 && (
                   <span className="rounded-full bg-rose-500 px-1.5 py-0.5 text-xs text-white">{unreadCount}</span>
                 )}
               </Link>
               {(user?.role === 'Seller' || user?.role === 'Admin') && (
-                <Link href="/dashboard" className="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-rose-50">Dashboard</Link>
+                <Link
+                  href="/dashboard"
+                  onClick={() => setMobileOpen(false)}
+                  className={`block rounded-lg px-3 py-2 text-sm ${pathname.startsWith('/dashboard') ? 'bg-rose-50 text-rose-600 font-medium' : 'text-gray-700 hover:bg-rose-50'}`}
+                >
+                  Dashboard
+                </Link>
               )}
               <button onClick={logout} className="block w-full text-left rounded-lg px-3 py-2 text-sm text-red-500 hover:bg-red-50">
                 Log out
@@ -188,8 +227,8 @@ export function Navbar() {
             </>
           ) : (
             <>
-              <Link href="/login" className="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-rose-50">Log in</Link>
-              <Link href="/register" className="block rounded-lg px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50">Sign up</Link>
+              <Link href="/login" onClick={() => setMobileOpen(false)} className="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-rose-50">Log in</Link>
+              <Link href="/register" onClick={() => setMobileOpen(false)} className="block rounded-lg px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50">Sign up</Link>
             </>
           )}
         </div>

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7093';
 
@@ -20,13 +20,22 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor — handle 401
+// Response interceptor — attach displayMessage and handle 401
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
+  (error: AxiosError<{ errors?: string[]; message?: string }>) => {
+    // Attach a human-readable message so callers can do:
+    //   catch (err) => toast.error(err.displayMessage ?? 'Something went wrong')
+    const displayMessage =
+      error.response?.data?.errors?.[0] ??
+      error.response?.data?.message ??
+      error.message ??
+      'Something went wrong';
+
+    (error as AxiosError & { displayMessage: string }).displayMessage = displayMessage;
+
     if (error.response?.status === 401) {
       if (typeof window !== 'undefined') {
-        // Skip redirect for auth endpoints — let the calling code handle the error
         const isAuthEndpoint = error.config?.url?.includes('/api/auth/');
         if (!isAuthEndpoint) {
           localStorage.removeItem('token');
@@ -35,6 +44,7 @@ apiClient.interceptors.response.use(
         }
       }
     }
+
     return Promise.reject(error);
   }
 );
