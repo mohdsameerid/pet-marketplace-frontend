@@ -218,7 +218,7 @@ export default function ListingDetailPage() {
                       activeImage === i ? 'border-rose-500 shadow-sm' : 'border-transparent opacity-70 hover:opacity-100'
                     }`}
                   >
-                    <Image src={img.imageUrl} alt="" fill className="object-cover" sizes="64px" />
+                    <Image src={img.imageUrl} alt={`${listing.title} thumbnail ${i + 1}`} fill className="object-cover" sizes="64px" />
                   </button>
                 ))}
               </div>
@@ -352,7 +352,7 @@ export default function ListingDetailPage() {
                     </div>
                     <div className="flex gap-0.5">
                       {Array.from({ length: 5 }).map((_, i) => (
-                        <Star key={i} size={13} className={i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'} />
+                        <Star key={`${review.id}-star-${i}`} size={13} className={i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'} />
                       ))}
                     </div>
                   </div>
