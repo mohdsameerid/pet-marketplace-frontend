@@ -300,7 +300,7 @@ function ImageModal({
           {listing.images.map((img) => (
             <div key={img.id} className="relative group">
               <div className="relative aspect-square rounded-xl overflow-hidden bg-rose-50">
-                <Image src={img.imageUrl} alt="" fill className="object-cover" sizes="120px" />
+                <Image src={img.imageUrl} alt={`${listing.title} image`} fill className="object-cover" sizes="120px" />
                 {img.isMain && (
                   <div className="absolute bottom-1 left-1 flex items-center gap-0.5 rounded-full bg-yellow-400 px-1.5 py-0.5">
                     <Star size={9} className="fill-white text-white" />

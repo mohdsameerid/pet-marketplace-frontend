@@ -72,7 +72,7 @@ export default function HomePage() {
             Thousands of ads with furry and feathered pets, let&apos;s give love to your little friend
           </p>
 
-          <div className="mt-8 grid grid-cols-2 gap-3 inline-grid grid-cols-2 gap-3 mx-auto">
+          <div className="mt-8 inline-grid grid-cols-2 gap-3 mx-auto">
             <Link href="/listings" className="block">
               <Button
                 size="lg"
@@ -161,7 +161,7 @@ export default function HomePage() {
           <p className="text-gray-500 mb-7 text-lg">
             Join thousands of pet lovers across India
           </p>
-          <div className="grid grid-cols-2 gap-3 inline-grid grid-cols-2 gap-3 mx-auto">
+          <div className="inline-grid grid-cols-2 gap-3 mx-auto">
             <Link href="/listings" className="block">
               <Button
                 size="lg"
