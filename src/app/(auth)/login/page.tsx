@@ -52,7 +52,7 @@ export default function LoginPage() {
         if (res.data.data.role === 'Admin') {
           router.push('/admin');
         } else {
-          router.push('/');
+          router.push('/dashboard');
         }
       } else {
         toast.error(res.data.errors?.[0] ?? 'Login failed');
