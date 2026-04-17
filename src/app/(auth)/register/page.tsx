@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
 import { authApi } from '@/lib/api/auth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -12,92 +14,72 @@ import toast from 'react-hot-toast';
 
 type Role = 'Buyer' | 'Seller';
 
+const registerSchema = Yup.object({
+  fullName: Yup.string()
+    .required('Full name is required')
+    .min(2, 'Name must be at least 2 characters'),
+  email: Yup.string()
+    .required('Email is required')
+    .email('Enter a valid email address'),
+  password: Yup.string()
+    .required('Password is required')
+    .min(6, 'Password must be at least 6 characters')
+    .matches(/[A-Z]/, 'Password must contain at least 1 uppercase letter')
+    .matches(/[0-9]/, 'Password must contain at least 1 number'),
+  confirmPassword: Yup.string()
+    .required('Please confirm your password')
+    .oneOf([Yup.ref('password')], 'Passwords do not match'),
+  phoneNumber: Yup.string(),
+  city: Yup.string(),
+  role: Yup.mixed<Role>().oneOf(['Buyer', 'Seller']).required(),
+});
+
 export default function RegisterPage() {
   const router = useRouter();
-  const [form, setForm] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    phoneNumber: '',
-    city: '',
-    role: 'Buyer' as Role,
-  });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => { document.title = 'Create Account — PetMarketplace'; }, []);
 
-  const validate = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!form.fullName.trim()) {
-      newErrors.fullName = 'Full name is required';
-    } else if (form.fullName.trim().length < 2) {
-      newErrors.fullName = 'Name must be at least 2 characters';
-    }
-
-    if (!form.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      newErrors.email = 'Enter a valid email address';
-    }
-
-    if (!form.password) {
-      newErrors.password = 'Password is required';
-    } else if (form.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    } else if (!/[A-Z]/.test(form.password)) {
-      newErrors.password = 'Password must contain at least 1 uppercase letter';
-    } else if (!/[0-9]/.test(form.password)) {
-      newErrors.password = 'Password must contain at least 1 number';
-    }
-
-    if (!form.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
-    } else if (form.password !== form.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-
-    return newErrors;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrors({});
-
-    const newErrors = validate();
-    if (Object.keys(newErrors).length) { setErrors(newErrors); return; }
-
-    setIsLoading(true);
-    try {
-      const payload = {
-        fullName: form.fullName,
-        email: form.email,
-        password: form.password,
-        role: form.role,
-        ...(form.phoneNumber && { phoneNumber: form.phoneNumber }),
-        ...(form.city && { city: form.city }),
-      };
-      const res = await authApi.register(payload);
-      if (res.data.success) {
-        toast.success('Account created! An admin will verify it before you can log in.');
-        await new Promise((r) => setTimeout(r, 1500));
-        router.push('/login');
-      } else {
-        toast.error(res.data.errors?.[0] ?? 'Registration failed');
+  const formik = useFormik({
+    initialValues: {
+      fullName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      phoneNumber: '',
+      city: '',
+      role: 'Buyer' as Role,
+    },
+    validationSchema: registerSchema,
+    onSubmit: async (values, { setSubmitting }) => {
+      try {
+        const payload = {
+          fullName: values.fullName,
+          email: values.email,
+          password: values.password,
+          role: values.role,
+          ...(values.phoneNumber && { phoneNumber: values.phoneNumber }),
+          ...(values.city && { city: values.city }),
+        };
+        const res = await authApi.register(payload);
+        if (res.data.success) {
+          toast.success('Account created! An admin will verify it before you can log in.');
+          await new Promise((r) => setTimeout(r, 1500));
+          router.push('/login');
+        } else {
+          toast.error(res.data.errors?.[0] ?? 'Registration failed');
+        }
+      } catch (err: unknown) {
+        const message =
+          (err as { response?: { data?: { errors?: string[] } } })?.response?.data?.errors?.[0] ??
+          'Registration failed. Please try again.';
+        toast.error(message);
+      } finally {
+        setSubmitting(false);
       }
-    } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { errors?: string[] } } })?.response?.data?.errors?.[0] ??
-        'Registration failed. Please try again.';
-      toast.error(message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+  });
 
   const roles: { value: Role; label: string; sub: string; Icon: typeof ShoppingBag }[] = [
     { value: 'Buyer', label: 'Buy / Adopt', sub: 'Find a pet', Icon: ShoppingBag },
@@ -129,16 +111,16 @@ export default function RegisterPage() {
           <p className="mt-1 text-sm text-gray-500">Join the PetMarketplace community</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 space-y-4">
+        <form onSubmit={formik.handleSubmit} noValidate className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 space-y-4">
           {/* Role toggle */}
           <div className="grid grid-cols-2 gap-2">
             {roles.map(({ value, label, sub, Icon }) => (
               <button
                 key={value}
                 type="button"
-                onClick={() => setForm({ ...form, role: value })}
+                onClick={() => formik.setFieldValue('role', value)}
                 className={`flex flex-col items-center gap-1 rounded-xl border-2 py-3 px-2 text-sm font-medium transition-all ${
-                  form.role === value
+                  formik.values.role === value
                     ? 'border-rose-500 bg-rose-50 text-rose-600'
                     : 'border-gray-200 bg-white text-gray-500 hover:border-rose-200 hover:text-rose-500'
                 }`}
@@ -153,18 +135,16 @@ export default function RegisterPage() {
           <Input
             label="Full Name"
             placeholder="John Doe"
-            value={form.fullName}
-            onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-            error={errors.fullName}
+            {...formik.getFieldProps('fullName')}
+            error={(formik.touched.fullName || formik.submitCount > 0) && formik.errors.fullName ? formik.errors.fullName : undefined}
             required
           />
           <Input
             label="Email"
             type="email"
             placeholder="you@example.com"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            error={errors.email}
+            {...formik.getFieldProps('email')}
+            error={(formik.touched.email || formik.submitCount > 0) && formik.errors.email ? formik.errors.email : undefined}
             required
           />
 
@@ -177,11 +157,10 @@ export default function RegisterPage() {
               <input
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
                 suppressHydrationWarning
+                {...formik.getFieldProps('password')}
                 className={`w-full rounded-xl border px-4 py-2.5 pr-10 text-sm outline-none transition-all duration-200 placeholder:text-gray-400 focus:ring-2 focus:border-transparent ${
-                  errors.password
+                  (formik.touched.password || formik.submitCount > 0) && formik.errors.password
                     ? 'border-red-400 bg-red-50 focus:ring-red-300'
                     : 'border-gray-200 bg-white hover:border-gray-300 focus:ring-rose-400'
                 }`}
@@ -194,8 +173,8 @@ export default function RegisterPage() {
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
-            {errors.password
-              ? <p className="text-xs text-red-500">{errors.password}</p>
+            {(formik.touched.password || formik.submitCount > 0) && formik.errors.password
+              ? <p className="text-xs text-red-500">{formik.errors.password}</p>
               : <p className="text-xs text-gray-400">Min 6 chars, 1 uppercase, 1 number</p>
             }
           </div>
@@ -209,11 +188,10 @@ export default function RegisterPage() {
               <input
                 type={showConfirm ? 'text' : 'password'}
                 placeholder="••••••••"
-                value={form.confirmPassword}
-                onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
                 suppressHydrationWarning
+                {...formik.getFieldProps('confirmPassword')}
                 className={`w-full rounded-xl border px-4 py-2.5 pr-10 text-sm outline-none transition-all duration-200 placeholder:text-gray-400 focus:ring-2 focus:border-transparent ${
-                  errors.confirmPassword
+                  (formik.touched.confirmPassword || formik.submitCount > 0) && formik.errors.confirmPassword
                     ? 'border-red-400 bg-red-50 focus:ring-red-300'
                     : 'border-gray-200 bg-white hover:border-gray-300 focus:ring-rose-400'
                 }`}
@@ -226,7 +204,9 @@ export default function RegisterPage() {
                 {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
-            {errors.confirmPassword && <p className="text-xs text-red-500">{errors.confirmPassword}</p>}
+            {(formik.touched.confirmPassword || formik.submitCount > 0) && formik.errors.confirmPassword && (
+              <p className="text-xs text-red-500">{formik.errors.confirmPassword}</p>
+            )}
           </div>
 
           {/* Phone and City side by side */}
@@ -235,18 +215,16 @@ export default function RegisterPage() {
               label="Phone"
               type="tel"
               placeholder="+91 98765 43210"
-              value={form.phoneNumber}
-              onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
+              {...formik.getFieldProps('phoneNumber')}
             />
             <Input
               label="City"
               placeholder="Mumbai"
-              value={form.city}
-              onChange={(e) => setForm({ ...form, city: e.target.value })}
+              {...formik.getFieldProps('city')}
             />
           </div>
 
-          <Button type="submit" isLoading={isLoading} className="w-full">
+          <Button type="submit" isLoading={formik.isSubmitting} className="w-full">
             Create Account
           </Button>
 
