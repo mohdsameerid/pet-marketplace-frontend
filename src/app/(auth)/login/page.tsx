@@ -52,7 +52,7 @@ export default function LoginPage() {
         if (res.data.data.role === 'Admin') {
           router.push('/admin');
         } else {
-          router.push('/');
+          router.push('/dashboard');
         }
       } else {
         toast.error(res.data.errors?.[0] ?? 'Login failed');
@@ -74,8 +74,8 @@ export default function LoginPage() {
       <PawPrintBg size={150} opacity={0.10} className="absolute top-10 right-8 text-rose-300 rotate-[25deg]" />
       <PawPrintBg size={120} opacity={0.10} className="absolute bottom-10 left-10 text-rose-300 rotate-[15deg]" />
       <PawPrintBg size={100} opacity={0.08} className="absolute bottom-20 right-16 text-rose-300 rotate-[-30deg]" />
-      <PawPrintBg size={80}  opacity={0.08} className="absolute top-1/2 left-4 text-rose-300 rotate-[40deg]" />
-      <PawPrintBg size={90}  opacity={0.08} className="absolute top-1/3 right-1/4 text-rose-300 rotate-[-15deg]" />
+      <PawPrintBg size={80} opacity={0.08} className="absolute top-1/2 left-4 text-rose-300 rotate-[40deg]" />
+      <PawPrintBg size={90} opacity={0.08} className="absolute top-1/3 right-1/4 text-rose-300 rotate-[-15deg]" />
 
       <div className="relative z-10 w-full max-w-sm">
         {/* Logo */}
@@ -115,11 +115,10 @@ export default function LoginPage() {
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 suppressHydrationWarning
-                className={`w-full rounded-xl border px-4 py-2.5 pr-10 text-sm outline-none transition-all duration-200 placeholder:text-gray-400 focus:ring-2 focus:border-transparent ${
-                  errors.password
-                    ? 'border-red-400 bg-red-50 focus:ring-red-300'
-                    : 'border-gray-200 bg-white hover:border-gray-300 focus:ring-rose-400'
-                }`}
+                className={`w-full rounded-xl border px-4 py-2.5 pr-10 text-sm outline-none transition-all duration-200 placeholder:text-gray-400 focus:ring-2 focus:border-transparent ${errors.password
+                  ? 'border-red-400 bg-red-50 focus:ring-red-300'
+                  : 'border-gray-200 bg-white hover:border-gray-300 focus:ring-rose-400'
+                  }`}
               />
               <button
                 type="button"
@@ -143,16 +142,6 @@ export default function LoginPage() {
             Sign up
           </Link>
         </p>
-
-        {/* Dev hint box */}
-        <div className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs text-gray-600">
-          <p className="font-semibold text-rose-700 mb-2">Test credentials</p>
-          <div className="space-y-1 font-mono">
-            <p><span className="text-gray-500">Admin:</span> admin@test.com / Test@123</p>
-            <p><span className="text-gray-500">Seller:</span> seller@test.com / Test@123</p>
-            <p><span className="text-gray-500">Buyer:</span> buyer@test.com / Test@123</p>
-          </div>
-        </div>
       </div>
     </div>
   );
