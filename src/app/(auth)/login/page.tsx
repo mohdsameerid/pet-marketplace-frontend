@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
 import { useAuth } from '@/context/AuthContext';
 import { authApi } from '@/lib/api/auth';
 import { Button } from '@/components/ui/Button';
@@ -11,61 +13,49 @@ import { PawPrint, Eye, EyeOff } from 'lucide-react';
 import { PawPrintBg } from '@/components/ui/PawPrintBg';
 import toast from 'react-hot-toast';
 
+const loginSchema = Yup.object({
+  email: Yup.string()
+    .required('Email is required')
+    .email('Enter a valid email address'),
+  password: Yup.string()
+    .required('Password is required')
+    .min(6, 'Password must be at least 6 characters'),
+});
+
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
-  const [form, setForm] = useState({ email: '', password: '' });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => { document.title = 'Sign In — PetMarketplace'; }, []);
 
-  const validate = () => {
-    const newErrors: Record<string, string> = {};
-    if (!form.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      newErrors.email = 'Enter a valid email address';
-    }
-    if (!form.password) {
-      newErrors.password = 'Password is required';
-    } else if (form.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-    return newErrors;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrors({});
-
-    const newErrors = validate();
-    if (Object.keys(newErrors).length) { setErrors(newErrors); return; }
-
-    setIsLoading(true);
-    try {
-      const res = await authApi.login(form);
-      if (res.data.success) {
-        login(res.data.data);
-        toast.success(`Welcome back, ${res.data.data.fullName}!`);
-        if (res.data.data.role === 'Admin') {
-          router.push('/admin');
+  const formik = useFormik({
+    initialValues: { email: '', password: '' },
+    validationSchema: loginSchema,
+    onSubmit: async (values, { setSubmitting }) => {
+      try {
+        const res = await authApi.login(values);
+        if (res.data.success) {
+          login(res.data.data);
+          toast.success(`Welcome back, ${res.data.data.fullName}!`);
+          if (res.data.data.role === 'Admin') {
+            router.push('/admin');
+          } else {
+            router.push('/dashboard');
+          }
         } else {
-          router.push('/dashboard');
+          toast.error(res.data.errors?.[0] ?? 'Login failed');
         }
-      } else {
-        toast.error(res.data.errors?.[0] ?? 'Login failed');
+      } catch (err: unknown) {
+        const message =
+          (err as { response?: { data?: { errors?: string[] } } })?.response?.data?.errors?.[0] ??
+          'Invalid credentials or unverified account';
+        toast.error(message);
+      } finally {
+        setSubmitting(false);
       }
-    } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { errors?: string[] } } })?.response?.data?.errors?.[0] ??
-        'Invalid credentials or unverified account';
-      toast.error(message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+  });
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-rose-100 px-4">
@@ -92,14 +82,13 @@ export default function LoginPage() {
           <p className="mt-1 text-sm text-gray-500">Log in to your account</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 space-y-4">
+        <form onSubmit={formik.handleSubmit} noValidate className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 space-y-4">
           <Input
             label="Email"
             type="email"
             placeholder="you@example.com"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            error={errors.email}
+            {...formik.getFieldProps('email')}
+            error={(formik.touched.email || formik.submitCount > 0) && formik.errors.email ? formik.errors.email : undefined}
             required
           />
 
@@ -112,13 +101,13 @@ export default function LoginPage() {
               <input
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
                 suppressHydrationWarning
-                className={`w-full rounded-xl border px-4 py-2.5 pr-10 text-sm outline-none transition-all duration-200 placeholder:text-gray-400 focus:ring-2 focus:border-transparent ${errors.password
-                  ? 'border-red-400 bg-red-50 focus:ring-red-300'
-                  : 'border-gray-200 bg-white hover:border-gray-300 focus:ring-rose-400'
-                  }`}
+                {...formik.getFieldProps('password')}
+                className={`w-full rounded-xl border px-4 py-2.5 pr-10 text-sm outline-none transition-all duration-200 placeholder:text-gray-400 focus:ring-2 focus:border-transparent ${
+                  (formik.touched.password || formik.submitCount > 0) && formik.errors.password
+                    ? 'border-red-400 bg-red-50 focus:ring-red-300'
+                    : 'border-gray-200 bg-white hover:border-gray-300 focus:ring-rose-400'
+                }`}
               />
               <button
                 type="button"
@@ -128,10 +117,12 @@ export default function LoginPage() {
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
-            {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
+            {(formik.touched.password || formik.submitCount > 0) && formik.errors.password && (
+              <p className="text-xs text-red-500">{formik.errors.password}</p>
+            )}
           </div>
 
-          <Button type="submit" isLoading={isLoading} className="w-full">
+          <Button type="submit" isLoading={formik.isSubmitting} className="w-full">
             Log in
           </Button>
         </form>

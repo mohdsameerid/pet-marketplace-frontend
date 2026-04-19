@@ -14,6 +14,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Spinner } from '@/components/ui/Spinner';
 import { Pagination } from '@/components/ui/Pagination';
+import { Select } from '@/components/ui/Select';
 import { listingsApi } from '@/lib/api/listings';
 import { favoritesApi } from '@/lib/api/favorites';
 import { inquiriesApi } from '@/lib/api/inquiries';
@@ -71,6 +72,9 @@ const editSchema = Yup.object({
 // ─── Create form ───────────────────────────────────────────────────────────────
 
 function CreateListingForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: () => void }) {
+  const [primaryImage, setPrimaryImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
   const formik = useFormik({
     initialValues: {
       title: '', description: '', price: 0, isNegotiable: false,
@@ -79,8 +83,16 @@ function CreateListingForm({ onSuccess, onClose }: { onSuccess: () => void; onCl
     },
     validationSchema: createSchema,
     onSubmit: async (values) => {
-      await listingsApi.create({ ...values, breed: values.breed || undefined });
-      toast.success('Listing created as Draft. Upload images and submit for approval.');
+      const res = await listingsApi.create({ ...values, breed: values.breed || undefined });
+      const listingId = res.data.data.id;
+      if (primaryImage) {
+        try {
+          await listingsApi.uploadImage(listingId, primaryImage);
+        } catch {
+          toast.error('Listing created but image upload failed. Add images later.');
+        }
+      }
+      toast.success('Listing created as Draft. Submit for approval when ready.');
       onSuccess();
     },
   });
@@ -95,17 +107,19 @@ function CreateListingForm({ onSuccess, onClose }: { onSuccess: () => void; onCl
         </div>
         <div>
           <label className="text-sm font-medium text-gray-700 block mb-1">Species <span className="text-rose-500">*</span></label>
-          <select name="species" value={formik.values.species} onChange={formik.handleChange}
-            className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-rose-400">
-            {SPECIES_OPTIONS.map((s) => <option key={s}>{s}</option>)}
-          </select>
+          <Select
+            options={SPECIES_OPTIONS.map((s) => ({ label: s, value: s }))}
+            value={formik.values.species}
+            onChange={(val) => formik.setFieldValue('species', val)}
+          />
         </div>
         <div>
           <label className="text-sm font-medium text-gray-700 block mb-1">Gender <span className="text-rose-500">*</span></label>
-          <select name="gender" value={formik.values.gender} onChange={formik.handleChange}
-            className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-rose-400">
-            <option>Male</option><option>Female</option>
-          </select>
+          <Select
+            options={[{ label: 'Male', value: 'Male' }, { label: 'Female', value: 'Female' }]}
+            value={formik.values.gender}
+            onChange={(val) => formik.setFieldValue('gender', val)}
+          />
         </div>
         <Input label="Breed" placeholder="e.g. Siberian Husky" name="breed"
           value={formik.values.breed} onChange={formik.handleChange} onBlur={formik.handleBlur}
@@ -144,6 +158,45 @@ function CreateListingForm({ onSuccess, onClose }: { onSuccess: () => void; onCl
               {label}
             </label>
           ))}
+        </div>
+
+        {/* Primary Image */}
+        <div className="col-span-2">
+          <label className="text-sm font-medium text-gray-700 block mb-1">
+            Primary Image <span className="text-xs font-normal text-gray-400">(optional — more can be added later)</span>
+          </label>
+          {imagePreview ? (
+            <div className="relative">
+              <div className="relative h-36 w-full rounded-xl overflow-hidden bg-rose-50">
+                <Image src={imagePreview} alt="Preview" fill className="object-cover" sizes="400px" />
+              </div>
+              <button
+                type="button"
+                onClick={() => { setPrimaryImage(null); setImagePreview(null); }}
+                className="absolute top-2 right-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600 transition-colors"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ) : (
+            <label className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-gray-200 px-4 py-5 text-sm text-gray-400 cursor-pointer hover:border-rose-300 hover:text-rose-400 transition-colors">
+              <Upload size={20} />
+              <span>Click to upload primary image</span>
+              <span className="text-xs">JPEG, PNG, WebP · max 5 MB</span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  if (f.size / 1024 / 1024 > 5) { toast.error('Image must be under 5 MB'); return; }
+                  setPrimaryImage(f);
+                  setImagePreview(URL.createObjectURL(f));
+                }}
+              />
+            </label>
+          )}
         </div>
       </div>
       {formik.errors.price && formik.touched.price && (
