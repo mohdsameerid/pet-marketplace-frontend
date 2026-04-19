@@ -16,6 +16,7 @@ import { Inquiry, Listing } from '@/types';
 import { formatDate, formatPrice } from '@/lib/utils/format';
 import { MessageCircle, Send } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { Select } from '@/components/ui/Select';
 import toast from 'react-hot-toast';
 
 const messageSchema = Yup.object({
@@ -259,15 +260,12 @@ function InquiriesContent() {
           ) : (
             <div className="flex items-center gap-3">
               <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter by listing:</label>
-              <select
+              <Select
+                className="flex-1 max-w-sm"
+                options={myListings.map((l) => ({ label: l.title, value: l.id }))}
                 value={selectedListingId}
-                onChange={(e) => setSelectedListingId(e.target.value)}
-                className="flex-1 max-w-sm rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-rose-400"
-              >
-                {myListings.map((l) => (
-                  <option key={l.id} value={l.id}>{l.title}</option>
-                ))}
-              </select>
+                onChange={(val) => setSelectedListingId(val)}
+              />
             </div>
           )}
         </div>
