@@ -9,6 +9,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 export const metadata: Metadata = {
   title: 'PetMarketplace — Buy & Sell Pets',
   description: 'Find verified pets for sale or adoption across India.',
+  icons: { icon: '/icon.svg', shortcut: '/icon.svg' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

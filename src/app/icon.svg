@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Paw print icon for PetMarketplace -->
+  <!-- Top-left toe -->
+  <ellipse cx="9" cy="8" rx="3" ry="3.8" fill="#f43f5e"/>
+  <!-- Top-right toe -->
+  <ellipse cx="23" cy="8" rx="3" ry="3.8" fill="#f43f5e"/>
+  <!-- Left toe -->
+  <ellipse cx="5" cy="15" rx="2.8" ry="3.5" fill="#f43f5e"/>
+  <!-- Right toe -->
+  <ellipse cx="27" cy="15" rx="2.8" ry="3.5" fill="#f43f5e"/>
+  <!-- Main pad -->
+  <path d="M16 13c-5 0-9 3.5-9 8 0 3 2 5 4 5.5 1.5.5 3 .5 5 .5s3.5 0 5-.5c2-.5 4-2.5 4-5.5 0-4.5-4-8-9-8z" fill="#f43f5e"/>
+</svg>
