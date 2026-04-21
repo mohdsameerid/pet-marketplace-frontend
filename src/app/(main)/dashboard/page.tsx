@@ -1,55 +1,94 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
-import { Navbar } from '@/components/layout/Navbar';
-import { Footer } from '@/components/layout/Footer';
-import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { Modal } from '@/components/ui/Modal';
-import { Input } from '@/components/ui/Input';
-import { Spinner } from '@/components/ui/Spinner';
-import { Pagination } from '@/components/ui/Pagination';
-import { Select } from '@/components/ui/Select';
-import { listingsApi } from '@/lib/api/listings';
-import { favoritesApi } from '@/lib/api/favorites';
-import { inquiriesApi } from '@/lib/api/inquiries';
-import { useAuth } from '@/context/AuthContext';
-import { Listing, ListingStatus, PagedResult, Favorite, Inquiry } from '@/types';
-import { formatPrice, formatDate, formatAge } from '@/lib/utils/format';
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
+import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Modal } from "@/components/ui/Modal";
+import { Input } from "@/components/ui/Input";
+import { Spinner } from "@/components/ui/Spinner";
+import { Pagination } from "@/components/ui/Pagination";
+import { Select } from "@/components/ui/Select";
+import { listingsApi } from "@/lib/api/listings";
+import { favoritesApi } from "@/lib/api/favorites";
+import { inquiriesApi } from "@/lib/api/inquiries";
+import { useAuth } from "@/context/AuthContext";
 import {
-  Plus, Edit2, Trash2, Send, Upload, Eye, Star, ShieldCheck,
-  Heart, MessageCircle, MapPin, Search, LayoutDashboard, X,
-} from 'lucide-react';
-import toast from 'react-hot-toast';
+  Listing,
+  ListingStatus,
+  PagedResult,
+  Favorite,
+  Inquiry,
+} from "@/types";
+import { formatPrice, formatDate, formatAge } from "@/lib/utils/format";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  Send,
+  Upload,
+  Eye,
+  Star,
+  ShieldCheck,
+  Heart,
+  MessageCircle,
+  MapPin,
+  Search,
+  LayoutDashboard,
+  X,
+} from "lucide-react";
+import toast from "react-hot-toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-const SPECIES_OPTIONS = ['Dog', 'Cat', 'Bird', 'Fish', 'Rabbit', 'Other'];
+const SPECIES_OPTIONS = ["Dog", "Cat", "Bird", "Fish", "Rabbit", "Other"];
 
-const statusBadge: Record<ListingStatus, { label: string; variant: 'default' | 'warning' | 'success' | 'danger' | 'info' | 'rose' }> = {
-  Draft: { label: 'Draft', variant: 'default' },
-  PendingApproval: { label: 'Pending Review', variant: 'warning' },
-  Active: { label: 'Active', variant: 'success' },
-  Rejected: { label: 'Rejected', variant: 'danger' },
-  Sold: { label: 'Sold', variant: 'info' },
+const statusBadge: Record<
+  ListingStatus,
+  {
+    label: string;
+    variant: "default" | "warning" | "success" | "danger" | "info" | "rose";
+  }
+> = {
+  Draft: { label: "Draft", variant: "default" },
+  PendingApproval: { label: "Pending Review", variant: "warning" },
+  Active: { label: "Active", variant: "success" },
+  Rejected: { label: "Rejected", variant: "danger" },
+  Sold: { label: "Sold", variant: "info" },
 };
 
 // ─── Validation schemas ────────────────────────────────────────────────────────
 
 const createSchema = Yup.object({
-  title: Yup.string().min(5, 'Min 5 chars').max(200, 'Max 200 chars').required('Title is required'),
-  description: Yup.string().min(20, 'Min 20 chars').max(2000, 'Max 2000 chars').required('Description is required'),
-  price: Yup.number().min(0, 'Min 0').max(10_000_000, 'Max 10,000,000').required('Price is required'),
-  species: Yup.string().required('Species is required'),
-  breed: Yup.string().max(100, 'Max 100 chars'),
-  ageMonths: Yup.number().min(0, 'Min 0').max(300, 'Max 300 months').required('Age is required'),
-  gender: Yup.string().required('Gender is required'),
-  city: Yup.string().min(2, 'Min 2 chars').max(100, 'Max 100 chars').required('City is required'),
+  title: Yup.string()
+    .min(5, "Min 5 chars")
+    .max(200, "Max 200 chars")
+    .required("Title is required"),
+  description: Yup.string()
+    .min(20, "Min 20 chars")
+    .max(2000, "Max 2000 chars")
+    .required("Description is required"),
+  price: Yup.number()
+    .min(0, "Min 0")
+    .max(10_000_000, "Max 10,000,000")
+    .required("Price is required"),
+  species: Yup.string().required("Species is required"),
+  breed: Yup.string().max(100, "Max 100 chars"),
+  ageMonths: Yup.number()
+    .min(0, "Min 0")
+    .max(300, "Max 300 months")
+    .required("Age is required"),
+  gender: Yup.string().required("Gender is required"),
+  city: Yup.string()
+    .min(2, "Min 2 chars")
+    .max(100, "Max 100 chars")
+    .required("City is required"),
   isNegotiable: Yup.boolean(),
   isVaccinated: Yup.boolean(),
   isNeutered: Yup.boolean(),
@@ -57,12 +96,27 @@ const createSchema = Yup.object({
 });
 
 const editSchema = Yup.object({
-  title: Yup.string().min(5, 'Min 5 chars').max(200, 'Max 200 chars').required('Title is required'),
-  description: Yup.string().min(20, 'Min 20 chars').max(2000, 'Max 2000 chars').required('Description is required'),
-  price: Yup.number().min(0, 'Min 0').max(10_000_000, 'Max 10,000,000').required('Price is required'),
-  breed: Yup.string().max(100, 'Max 100 chars'),
-  ageMonths: Yup.number().min(0, 'Min 0').max(300, 'Max 300 months').required('Age is required'),
-  city: Yup.string().min(2, 'Min 2 chars').max(100, 'Max 100 chars').required('City is required'),
+  title: Yup.string()
+    .min(5, "Min 5 chars")
+    .max(200, "Max 200 chars")
+    .required("Title is required"),
+  description: Yup.string()
+    .min(20, "Min 20 chars")
+    .max(2000, "Max 2000 chars")
+    .required("Description is required"),
+  price: Yup.number()
+    .min(0, "Min 0")
+    .max(10_000_000, "Max 10,000,000")
+    .required("Price is required"),
+  breed: Yup.string().max(100, "Max 100 chars"),
+  ageMonths: Yup.number()
+    .min(0, "Min 0")
+    .max(300, "Max 300 months")
+    .required("Age is required"),
+  city: Yup.string()
+    .min(2, "Min 2 chars")
+    .max(100, "Max 100 chars")
+    .required("City is required"),
   isNegotiable: Yup.boolean(),
   isVaccinated: Yup.boolean(),
   isNeutered: Yup.boolean(),
@@ -71,90 +125,179 @@ const editSchema = Yup.object({
 
 // ─── Create form ───────────────────────────────────────────────────────────────
 
-function CreateListingForm({ onSuccess, onClose }: { onSuccess: () => void; onClose: () => void }) {
+function CreateListingForm({
+  onSuccess,
+  onClose,
+}: {
+  onSuccess: () => void;
+  onClose: () => void;
+}) {
   const [primaryImage, setPrimaryImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const formik = useFormik({
     initialValues: {
-      title: '', description: '', price: 0, isNegotiable: false,
-      species: 'Dog', breed: '', ageMonths: 1, gender: 'Male',
-      city: '', isVaccinated: false, isNeutered: false, isVetChecked: false,
+      title: "",
+      description: "",
+      price: 0,
+      isNegotiable: false,
+      species: "Dog",
+      breed: "",
+      ageMonths: 1,
+      gender: "Male",
+      city: "",
+      isVaccinated: false,
+      isNeutered: false,
+      isVetChecked: false,
     },
     validationSchema: createSchema,
     onSubmit: async (values) => {
-      const res = await listingsApi.create({ ...values, breed: values.breed || undefined });
+      const res = await listingsApi.create({
+        ...values,
+        breed: values.breed || undefined,
+      });
       const listingId = res.data.data.id;
       if (primaryImage) {
         try {
           await listingsApi.uploadImage(listingId, primaryImage);
         } catch {
-          toast.error('Listing created but image upload failed. Add images later.');
+          toast.error(
+            "Listing created but image upload failed. Add images later.",
+          );
         }
       }
-      toast.success('Listing created as Draft. Submit for approval when ready.');
+      toast.success(
+        "Listing created as Draft. Submit for approval when ready.",
+      );
       onSuccess();
     },
   });
 
   return (
-    <form onSubmit={formik.handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+    <form
+      onSubmit={formik.handleSubmit}
+      className="space-y-4 max-h-[70vh] overflow-y-auto pr-1"
+    >
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2">
-          <Input label="Title" placeholder="Golden Retriever Puppy" name="title"
-            value={formik.values.title} onChange={formik.handleChange} onBlur={formik.handleBlur}
-            error={formik.touched.title ? formik.errors.title : undefined} required />
+          <Input
+            label="Title"
+            placeholder="Golden Retriever Puppy"
+            name="title"
+            value={formik.values.title}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            error={formik.touched.title ? formik.errors.title : undefined}
+            required
+          />
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-700 block mb-1">Species <span className="text-rose-500">*</span></label>
+          <label className="text-sm font-medium text-gray-700 block mb-1">
+            Species <span className="text-rose-500">*</span>
+          </label>
           <Select
             options={SPECIES_OPTIONS.map((s) => ({ label: s, value: s }))}
             value={formik.values.species}
-            onChange={(val) => formik.setFieldValue('species', val)}
+            onChange={(val) => formik.setFieldValue("species", val)}
           />
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-700 block mb-1">Gender <span className="text-rose-500">*</span></label>
+          <label className="text-sm font-medium text-gray-700 block mb-1">
+            Gender <span className="text-rose-500">*</span>
+          </label>
           <Select
-            options={[{ label: 'Male', value: 'Male' }, { label: 'Female', value: 'Female' }]}
+            options={[
+              { label: "Male", value: "Male" },
+              { label: "Female", value: "Female" },
+            ]}
             value={formik.values.gender}
-            onChange={(val) => formik.setFieldValue('gender', val)}
+            onChange={(val) => formik.setFieldValue("gender", val)}
           />
         </div>
-        <Input label="Breed" placeholder="e.g. Siberian Husky" name="breed"
-          value={formik.values.breed} onChange={formik.handleChange} onBlur={formik.handleBlur}
-          error={formik.touched.breed ? formik.errors.breed : undefined} />
-        <Input label="Age (months)" type="number" min={0} name="ageMonths"
-          value={formik.values.ageMonths} onChange={formik.handleChange} onBlur={formik.handleBlur}
-          error={formik.touched.ageMonths ? formik.errors.ageMonths : undefined} required />
-        <Input label="Price (₹)" type="number" min={0} name="price"
-          value={formik.values.price} onChange={formik.handleChange} onBlur={formik.handleBlur}
-          error={formik.touched.price ? formik.errors.price : undefined} required />
-        <Input label="City" placeholder="Mumbai" name="city"
-          value={formik.values.city} onChange={formik.handleChange} onBlur={formik.handleBlur}
-          error={formik.touched.city ? formik.errors.city : undefined} required />
+        <Input
+          label="Breed"
+          placeholder="e.g. Siberian Husky"
+          name="breed"
+          value={formik.values.breed}
+          onChange={formik.handleChange}
+          onBlur={formik.handleBlur}
+          error={formik.touched.breed ? formik.errors.breed : undefined}
+        />
+        <Input
+          label="Age (months)"
+          type="number"
+          min={0}
+          name="ageMonths"
+          value={formik.values.ageMonths}
+          onChange={formik.handleChange}
+          onBlur={formik.handleBlur}
+          error={formik.touched.ageMonths ? formik.errors.ageMonths : undefined}
+          required
+        />
+        <Input
+          label="Price (₹)"
+          type="number"
+          min={0}
+          name="price"
+          value={formik.values.price}
+          onChange={formik.handleChange}
+          onBlur={formik.handleBlur}
+          error={formik.touched.price ? formik.errors.price : undefined}
+          required
+        />
+        <Input
+          label="City"
+          placeholder="Mumbai"
+          name="city"
+          value={formik.values.city}
+          onChange={formik.handleChange}
+          onBlur={formik.handleBlur}
+          error={formik.touched.city ? formik.errors.city : undefined}
+          required
+        />
         <div className="col-span-2">
-          <label className="text-sm font-medium text-gray-700 block mb-1">Description <span className="text-rose-500">*</span></label>
-          <textarea name="description" value={formik.values.description} onChange={formik.handleChange} onBlur={formik.handleBlur}
-            rows={3} maxLength={2000} placeholder="Describe your pet..."
-            className={`w-full rounded-xl border px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-rose-400 resize-none ${formik.touched.description && formik.errors.description ? 'border-red-400 bg-red-50' : 'border-gray-200'
-              }`} />
+          <label className="text-sm font-medium text-gray-700 block mb-1">
+            Description <span className="text-rose-500">*</span>
+          </label>
+          <textarea
+            name="description"
+            value={formik.values.description}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            rows={3}
+            maxLength={2000}
+            placeholder="Describe your pet..."
+            className={`w-full rounded-xl border px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-rose-400 resize-none ${formik.touched.description && formik.errors.description
+                ? "border-red-400 bg-red-50"
+                : "border-gray-200"
+              }`}
+          />
           {formik.touched.description && formik.errors.description && (
-            <p className="text-xs text-red-500 mt-0.5">{formik.errors.description}</p>
+            <p className="text-xs text-red-500 mt-0.5">
+              {formik.errors.description}
+            </p>
           )}
         </div>
         <div className="col-span-2 flex flex-wrap gap-4">
-          {([
-            { key: 'isNegotiable', label: 'Negotiable' },
-            { key: 'isVaccinated', label: 'Vaccinated' },
-            { key: 'isNeutered', label: 'Neutered' },
-            { key: 'isVetChecked', label: 'Vet Checked' },
-          ] as const).map(({ key, label }) => (
-            <label key={key} className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
-              <input type="checkbox" name={key}
+          {(
+            [
+              { key: "isNegotiable", label: "Negotiable" },
+              { key: "isVaccinated", label: "Vaccinated" },
+              { key: "isNeutered", label: "Neutered" },
+              { key: "isVetChecked", label: "Vet Checked" },
+            ] as const
+          ).map(({ key, label }) => (
+            <label
+              key={key}
+              className="flex items-center gap-2 cursor-pointer text-sm text-gray-700"
+            >
+              <input
+                type="checkbox"
+                name={key}
                 checked={formik.values[key] as boolean}
                 onChange={formik.handleChange}
-                className="h-4 w-4 rounded accent-rose-500" />
+                className="h-4 w-4 rounded accent-rose-500"
+              />
               {label}
             </label>
           ))}
@@ -163,16 +306,28 @@ function CreateListingForm({ onSuccess, onClose }: { onSuccess: () => void; onCl
         {/* Primary Image */}
         <div className="col-span-2">
           <label className="text-sm font-medium text-gray-700 block mb-1">
-            Primary Image <span className="text-xs font-normal text-gray-400">(optional — more can be added later)</span>
+            Primary Image{" "}
+            <span className="text-xs font-normal text-gray-400">
+              (optional — more can be added later)
+            </span>
           </label>
           {imagePreview ? (
             <div className="relative">
               <div className="relative h-36 w-full rounded-xl overflow-hidden bg-rose-50">
-                <Image src={imagePreview} alt="Preview" fill className="object-cover" sizes="400px" />
+                <Image
+                  src={imagePreview}
+                  alt="Preview"
+                  fill
+                  className="object-cover"
+                  sizes="400px"
+                />
               </div>
               <button
                 type="button"
-                onClick={() => { setPrimaryImage(null); setImagePreview(null); }}
+                onClick={() => {
+                  setPrimaryImage(null);
+                  setImagePreview(null);
+                }}
                 className="absolute top-2 right-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600 transition-colors"
               >
                 <X size={12} />
@@ -190,7 +345,10 @@ function CreateListingForm({ onSuccess, onClose }: { onSuccess: () => void; onCl
                 onChange={(e) => {
                   const f = e.target.files?.[0];
                   if (!f) return;
-                  if (f.size / 1024 / 1024 > 5) { toast.error('Image must be under 5 MB'); return; }
+                  if (f.size / 1024 / 1024 > 5) {
+                    toast.error("Image must be under 5 MB");
+                    return;
+                  }
                   setPrimaryImage(f);
                   setImagePreview(URL.createObjectURL(f));
                 }}
@@ -203,8 +361,21 @@ function CreateListingForm({ onSuccess, onClose }: { onSuccess: () => void; onCl
         <p className="text-xs text-red-500">{formik.errors.price}</p>
       )}
       <div className="flex gap-3 pt-2">
-        <Button type="button" variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
-        <Button type="submit" isLoading={formik.isSubmitting} className="flex-1">Create Listing</Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onClose}
+          className="flex-1"
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          isLoading={formik.isSubmitting}
+          className="flex-1"
+        >
+          Create Listing
+        </Button>
       </div>
     </form>
   );
@@ -212,14 +383,22 @@ function CreateListingForm({ onSuccess, onClose }: { onSuccess: () => void; onCl
 
 // ─── Edit form ─────────────────────────────────────────────────────────────────
 
-function EditListingForm({ listing, onSuccess, onClose }: { listing: Listing; onSuccess: () => void; onClose: () => void }) {
+function EditListingForm({
+  listing,
+  onSuccess,
+  onClose,
+}: {
+  listing: Listing;
+  onSuccess: () => void;
+  onClose: () => void;
+}) {
   const formik = useFormik({
     initialValues: {
       title: listing.title,
       description: listing.description,
       price: listing.price,
       isNegotiable: listing.isNegotiable,
-      breed: listing.breed ?? '',
+      breed: listing.breed ?? "",
       ageMonths: listing.ageMonths,
       city: listing.city,
       isVaccinated: listing.isVaccinated,
@@ -228,62 +407,134 @@ function EditListingForm({ listing, onSuccess, onClose }: { listing: Listing; on
     },
     validationSchema: editSchema,
     onSubmit: async (values) => {
-      await listingsApi.update(listing.id, { ...values, breed: values.breed || undefined });
-      toast.success('Listing updated!');
+      await listingsApi.update(listing.id, {
+        ...values,
+        breed: values.breed || undefined,
+      });
+      toast.success("Listing updated!");
       onSuccess();
     },
   });
 
   return (
-    <form onSubmit={formik.handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+    <form
+      onSubmit={formik.handleSubmit}
+      className="space-y-4 max-h-[70vh] overflow-y-auto pr-1"
+    >
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2">
-          <Input label="Title" name="title"
-            value={formik.values.title} onChange={formik.handleChange} onBlur={formik.handleBlur}
-            error={formik.touched.title ? formik.errors.title : undefined} required />
+          <Input
+            label="Title"
+            name="title"
+            value={formik.values.title}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            error={formik.touched.title ? formik.errors.title : undefined}
+            required
+          />
         </div>
-        <Input label="Breed" name="breed"
-          value={formik.values.breed} onChange={formik.handleChange} onBlur={formik.handleBlur}
-          error={formik.touched.breed ? formik.errors.breed : undefined} />
-        <Input label="Age (months)" type="number" min={0} name="ageMonths"
-          value={formik.values.ageMonths} onChange={formik.handleChange} onBlur={formik.handleBlur}
-          error={formik.touched.ageMonths ? formik.errors.ageMonths : undefined} required />
-        <Input label="Price (₹)" type="number" min={0} name="price"
-          value={formik.values.price} onChange={formik.handleChange} onBlur={formik.handleBlur}
-          error={formik.touched.price ? formik.errors.price : undefined} required />
-        <Input label="City" name="city"
-          value={formik.values.city} onChange={formik.handleChange} onBlur={formik.handleBlur}
-          error={formik.touched.city ? formik.errors.city : undefined} required />
+        <Input
+          label="Breed"
+          name="breed"
+          value={formik.values.breed}
+          onChange={formik.handleChange}
+          onBlur={formik.handleBlur}
+          error={formik.touched.breed ? formik.errors.breed : undefined}
+        />
+        <Input
+          label="Age (months)"
+          type="number"
+          min={0}
+          name="ageMonths"
+          value={formik.values.ageMonths}
+          onChange={formik.handleChange}
+          onBlur={formik.handleBlur}
+          error={formik.touched.ageMonths ? formik.errors.ageMonths : undefined}
+          required
+        />
+        <Input
+          label="Price (₹)"
+          type="number"
+          min={0}
+          name="price"
+          value={formik.values.price}
+          onChange={formik.handleChange}
+          onBlur={formik.handleBlur}
+          error={formik.touched.price ? formik.errors.price : undefined}
+          required
+        />
+        <Input
+          label="City"
+          name="city"
+          value={formik.values.city}
+          onChange={formik.handleChange}
+          onBlur={formik.handleBlur}
+          error={formik.touched.city ? formik.errors.city : undefined}
+          required
+        />
         <div className="col-span-2">
-          <label className="text-sm font-medium text-gray-700 block mb-1">Description <span className="text-rose-500">*</span></label>
-          <textarea name="description" value={formik.values.description} onChange={formik.handleChange} onBlur={formik.handleBlur}
-            rows={3} maxLength={2000}
-            className={`w-full rounded-xl border px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-rose-400 resize-none ${formik.touched.description && formik.errors.description ? 'border-red-400 bg-red-50' : 'border-gray-200'
-              }`} />
+          <label className="text-sm font-medium text-gray-700 block mb-1">
+            Description <span className="text-rose-500">*</span>
+          </label>
+          <textarea
+            name="description"
+            value={formik.values.description}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            rows={3}
+            maxLength={2000}
+            className={`w-full rounded-xl border px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-rose-400 resize-none ${formik.touched.description && formik.errors.description
+                ? "border-red-400 bg-red-50"
+                : "border-gray-200"
+              }`}
+          />
           {formik.touched.description && formik.errors.description && (
-            <p className="text-xs text-red-500 mt-0.5">{formik.errors.description}</p>
+            <p className="text-xs text-red-500 mt-0.5">
+              {formik.errors.description}
+            </p>
           )}
         </div>
         <div className="col-span-2 flex flex-wrap gap-4">
-          {([
-            { key: 'isNegotiable', label: 'Negotiable' },
-            { key: 'isVaccinated', label: 'Vaccinated' },
-            { key: 'isNeutered', label: 'Neutered' },
-            { key: 'isVetChecked', label: 'Vet Checked' },
-          ] as const).map(({ key, label }) => (
-            <label key={key} className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
-              <input type="checkbox" name={key}
+          {(
+            [
+              { key: "isNegotiable", label: "Negotiable" },
+              { key: "isVaccinated", label: "Vaccinated" },
+              { key: "isNeutered", label: "Neutered" },
+              { key: "isVetChecked", label: "Vet Checked" },
+            ] as const
+          ).map(({ key, label }) => (
+            <label
+              key={key}
+              className="flex items-center gap-2 cursor-pointer text-sm text-gray-700"
+            >
+              <input
+                type="checkbox"
+                name={key}
                 checked={formik.values[key] as boolean}
                 onChange={formik.handleChange}
-                className="h-4 w-4 rounded accent-rose-500" />
+                className="h-4 w-4 rounded accent-rose-500"
+              />
               {label}
             </label>
           ))}
         </div>
       </div>
       <div className="flex gap-3 pt-2">
-        <Button type="button" variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
-        <Button type="submit" isLoading={formik.isSubmitting} className="flex-1">Save Changes</Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onClose}
+          className="flex-1"
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          isLoading={formik.isSubmitting}
+          className="flex-1"
+        >
+          Save Changes
+        </Button>
       </div>
     </form>
   );
@@ -291,23 +542,37 @@ function EditListingForm({ listing, onSuccess, onClose }: { listing: Listing; on
 
 // ─── Image Management Modal ────────────────────────────────────────────────────
 
-function ImageModal({ listing, onClose, onRefresh }: { listing: Listing; onClose: () => void; onRefresh: () => void }) {
+function ImageModal({
+  listing,
+  onClose,
+  onRefresh,
+}: {
+  listing: Listing;
+  onClose: () => void;
+  onRefresh: () => void;
+}) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const upload = async () => {
     if (!file) return;
-    if (listing.images.length >= 6) { toast.error('Max 6 images per listing'); return; }
-    if (file.size / 1024 / 1024 > 5) { toast.error('File must be under 5MB'); return; }
+    if (listing.images.length >= 6) {
+      toast.error("Max 6 images per listing");
+      return;
+    }
+    if (file.size / 1024 / 1024 > 5) {
+      toast.error("File must be under 5MB");
+      return;
+    }
     setUploading(true);
     try {
       await listingsApi.uploadImage(listing.id, file);
-      toast.success('Image uploaded!');
+      toast.success("Image uploaded!");
       setFile(null);
       onRefresh();
     } catch {
-      toast.error('Upload failed');
+      toast.error("Upload failed");
     } finally {
       setUploading(false);
     }
@@ -317,23 +582,23 @@ function ImageModal({ listing, onClose, onRefresh }: { listing: Listing; onClose
     setActionLoading(imageId);
     try {
       await listingsApi.deleteImage(listing.id, imageId);
-      toast.success('Image deleted');
+      toast.success("Image deleted");
       onRefresh();
     } catch {
-      toast.error('Failed to delete');
+      toast.error("Failed to delete");
     } finally {
       setActionLoading(null);
     }
   };
 
   const setMain = async (imageId: string) => {
-    setActionLoading(imageId + '-main');
+    setActionLoading(imageId + "-main");
     try {
       await listingsApi.setMainImage(listing.id, imageId);
-      toast.success('Main image updated');
+      toast.success("Main image updated");
       onRefresh();
     } catch {
-      toast.error('Failed to set main image');
+      toast.error("Failed to set main image");
     } finally {
       setActionLoading(null);
     }
@@ -348,11 +613,19 @@ function ImageModal({ listing, onClose, onRefresh }: { listing: Listing; onClose
           {listing.images.map((img) => (
             <div key={img.id} className="relative group">
               <div className="relative aspect-square rounded-xl overflow-hidden bg-rose-50">
-                <Image src={img.imageUrl} alt={`${listing.title} image`} fill className="object-cover" sizes="120px" />
+                <Image
+                  src={img.imageUrl}
+                  alt={`${listing.title} image`}
+                  fill
+                  className="object-cover"
+                  sizes="120px"
+                />
                 {img.isMain && (
                   <div className="absolute bottom-1 left-1 flex items-center gap-0.5 rounded-full bg-yellow-400 px-1.5 py-0.5">
                     <Star size={9} className="fill-white text-white" />
-                    <span className="text-[9px] font-bold text-white">Main</span>
+                    <span className="text-[9px] font-bold text-white">
+                      Main
+                    </span>
                   </div>
                 )}
               </div>
@@ -360,7 +633,7 @@ function ImageModal({ listing, onClose, onRefresh }: { listing: Listing; onClose
                 {!img.isMain && (
                   <button
                     onClick={() => setMain(img.id)}
-                    disabled={actionLoading === img.id + '-main'}
+                    disabled={actionLoading === img.id + "-main"}
                     className="rounded-full bg-yellow-400 p-1.5 text-white hover:bg-yellow-500 transition-colors"
                     title="Set as main"
                   >
@@ -390,13 +663,20 @@ function ImageModal({ listing, onClose, onRefresh }: { listing: Listing; onClose
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-rose-50 file:text-rose-600 file:font-medium hover:file:bg-rose-100"
           />
-          <Button onClick={upload} isLoading={uploading} disabled={!file} className="w-full">
+          <Button
+            onClick={upload}
+            isLoading={uploading}
+            disabled={!file}
+            className="w-full"
+          >
             <Upload size={15} /> Upload Image
           </Button>
         </div>
       )}
 
-      <Button variant="outline" onClick={onClose} className="w-full">Close</Button>
+      <Button variant="outline" onClick={onClose} className="w-full">
+        Close
+      </Button>
     </div>
   );
 }
@@ -417,34 +697,41 @@ function SellerDashboard() {
       const res = await listingsApi.getMyListings(p);
       setData(res.data.data);
     } catch {
-      toast.error('Failed to load listings');
+      toast.error("Failed to load listings");
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => { load(page); }, [page]);
+  useEffect(() => {
+    load(page);
+  }, [page]);
 
   const handleSubmitForApproval = async (id: string, hasImages: boolean) => {
-    if (!hasImages) { toast.error('Upload at least 1 image before submitting'); return; }
+    if (!hasImages) {
+      toast.error("Upload at least 1 image before submitting");
+      return;
+    }
     try {
       await listingsApi.submit(id);
-      toast.success('Submitted for approval!');
+      toast.success("Submitted for approval!");
       load(page);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { errors?: string[] } } })?.response?.data?.errors?.[0] ?? 'Failed to submit';
+      const msg =
+        (err as { response?: { data?: { errors?: string[] } } })?.response?.data
+          ?.errors?.[0] ?? "Failed to submit";
       toast.error(msg);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this listing permanently?')) return;
+    if (!confirm("Delete this listing permanently?")) return;
     try {
       await listingsApi.delete(id);
-      toast.success('Listing deleted');
+      toast.success("Listing deleted");
       load(page);
     } catch {
-      toast.error('Failed to delete');
+      toast.error("Failed to delete");
     }
   };
 
@@ -458,9 +745,13 @@ function SellerDashboard() {
           <div className="flex items-center gap-2">
             <LayoutDashboard size={22} className="text-rose-500" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Seller Dashboard</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Seller Dashboard
+              </h1>
               {data && (
-                <p className="text-sm text-gray-500 mt-0.5">{data.totalCount} listing{data.totalCount !== 1 ? 's' : ''}</p>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  {data.totalCount} listing{data.totalCount !== 1 ? "s" : ""}
+                </p>
               )}
             </div>
           </div>
@@ -478,7 +769,9 @@ function SellerDashboard() {
           <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-12 text-center">
             <span className="text-5xl block mb-3">🐾</span>
             <p className="text-gray-600 font-medium mb-1">No listings yet</p>
-            <p className="text-sm text-gray-400 mb-5">Create your first pet listing to get started</p>
+            <p className="text-sm text-gray-400 mb-5">
+              Create your first pet listing to get started
+            </p>
             <Button onClick={() => setCreateModal(true)}>
               <Plus size={16} /> Create Listing
             </Button>
@@ -487,41 +780,63 @@ function SellerDashboard() {
           <div className="space-y-3">
             {listings.map((listing) => {
               const s = statusBadge[listing.status];
-              const canEdit = listing.status === 'Draft' || listing.status === 'Rejected';
+              const canEdit =
+                listing.status === "Draft" || listing.status === "Rejected";
               const canSubmit = canEdit;
-              const canDelete = listing.status !== 'Active' && listing.status !== 'Sold';
-              const canManageImages = listing.status === 'Draft' || listing.status === 'Rejected';
+              const canDelete =
+                listing.status !== "Active" && listing.status !== "Sold";
+              const canManageImages =
+                listing.status === "Draft" || listing.status === "Rejected";
 
               return (
-                <div key={listing.id} className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+                <div
+                  key={listing.id}
+                  className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 flex flex-col sm:flex-row sm:items-center gap-4"
+                >
                   {listing.images.length > 0 && (
                     <div className="relative h-16 w-16 shrink-0 rounded-xl overflow-hidden bg-rose-50">
                       <Image
-                        src={(listing.images.find((i) => i.isMain) ?? listing.images[0]).imageUrl}
+                        src={
+                          (
+                            listing.images.find((i) => i.isMain) ??
+                            listing.images[0]
+                          ).imageUrl
+                        }
                         alt={listing.title}
-                        fill className="object-cover" sizes="64px"
+                        fill
+                        className="object-cover"
+                        sizes="64px"
                       />
                     </div>
                   )}
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start gap-2 flex-wrap">
-                      <h3 className="font-semibold text-gray-900 truncate">{listing.title}</h3>
+                      <h3 className="font-semibold text-gray-900 truncate">
+                        {listing.title}
+                      </h3>
                       <Badge variant={s.variant}>{s.label}</Badge>
                     </div>
                     <div className="flex gap-3 mt-1 text-xs text-gray-500 flex-wrap">
-                      <span>{listing.species}{listing.breed ? ` · ${listing.breed}` : ''}</span>
+                      <span>
+                        {listing.species}
+                        {listing.breed ? ` · ${listing.breed}` : ""}
+                      </span>
                       <span>{formatAge(listing.ageMonths)}</span>
                       <span>{formatPrice(listing.price)}</span>
                       <span>{listing.city}</span>
                       <span>{formatDate(listing.createdAt)}</span>
-                      <span>{listing.images.length} image{listing.images.length !== 1 ? 's' : ''}</span>
+                      <span>
+                        {listing.images.length} image
+                        {listing.images.length !== 1 ? "s" : ""}
+                      </span>
                     </div>
-                    {listing.status === 'Rejected' && listing.rejectionReason && (
-                      <p className="mt-1 text-xs text-red-600 bg-red-50 rounded-lg px-2 py-1 inline-block">
-                        Rejected: {listing.rejectionReason}
-                      </p>
-                    )}
+                    {listing.status === "Rejected" &&
+                      listing.rejectionReason && (
+                        <p className="mt-1 text-xs text-red-600 bg-red-50 rounded-lg px-2 py-1 inline-block">
+                          Rejected: {listing.rejectionReason}
+                        </p>
+                      )}
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap shrink-0">
@@ -551,7 +866,12 @@ function SellerDashboard() {
 
                     {canSubmit && (
                       <button
-                        onClick={() => handleSubmitForApproval(listing.id, listing.images.length > 0)}
+                        onClick={() =>
+                          handleSubmitForApproval(
+                            listing.id,
+                            listing.images.length > 0,
+                          )
+                        }
                         className="flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-100 transition-colors"
                       >
                         <Send size={13} /> Submit
@@ -575,29 +895,54 @@ function SellerDashboard() {
 
         {data && data.totalPages > 1 && (
           <div className="mt-6">
-            <Pagination currentPage={page} totalPages={data.totalPages} onPageChange={setPage} />
+            <Pagination
+              currentPage={page}
+              totalPages={data.totalPages}
+              onPageChange={setPage}
+            />
           </div>
         )}
       </main>
 
-      <Modal isOpen={createModal} onClose={() => setCreateModal(false)} title="Create New Listing" maxWidth="lg">
+      <Modal
+        isOpen={createModal}
+        onClose={() => setCreateModal(false)}
+        title="Create New Listing"
+        maxWidth="lg"
+      >
         <CreateListingForm
-          onSuccess={() => { setCreateModal(false); load(page); }}
+          onSuccess={() => {
+            setCreateModal(false);
+            load(page);
+          }}
           onClose={() => setCreateModal(false)}
         />
       </Modal>
 
-      <Modal isOpen={!!editListing} onClose={() => setEditListing(null)} title="Edit Listing" maxWidth="lg">
+      <Modal
+        isOpen={!!editListing}
+        onClose={() => setEditListing(null)}
+        title="Edit Listing"
+        maxWidth="lg"
+      >
         {editListing && (
           <EditListingForm
             listing={editListing}
-            onSuccess={() => { setEditListing(null); load(page); }}
+            onSuccess={() => {
+              setEditListing(null);
+              load(page);
+            }}
             onClose={() => setEditListing(null)}
           />
         )}
       </Modal>
 
-      <Modal isOpen={!!imageListing} onClose={() => setImageListing(null)} title="Manage Images" maxWidth="md">
+      <Modal
+        isOpen={!!imageListing}
+        onClose={() => setImageListing(null)}
+        title="Manage Images"
+        maxWidth="md"
+      >
         {imageListing && (
           <ImageModal
             listing={imageListing}
@@ -644,7 +989,7 @@ function BuyerDashboard() {
       }
     };
     load();
-    document.title = 'My Dashboard — PetMarketplace';
+    document.title = "My Dashboard — PetMarketplace";
   }, []);
 
   return (
@@ -656,9 +1001,13 @@ function BuyerDashboard() {
             {user?.fullName?.charAt(0).toUpperCase()}
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.fullName?.split(' ')[0]}!</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Welcome back, {user?.fullName?.split(" ")[0]}!
+            </h1>
             <div className="flex items-center gap-2 mt-1">
-              <span className="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">Buyer</span>
+              <span className="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                Buyer
+              </span>
               <span className="text-sm text-gray-500">{user?.email}</span>
             </div>
           </div>
@@ -687,7 +1036,9 @@ function BuyerDashboard() {
                 <MessageCircle size={18} className="text-blue-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{inquiries.length}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {inquiries.length}
+                </p>
                 <p className="text-xs text-gray-500 mt-0.5">Inquiries</p>
               </div>
             </div>
@@ -697,7 +1048,12 @@ function BuyerDashboard() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-white">Find a pet</p>
-                <Link href="/listings" className="text-xs text-rose-100 hover:text-white transition-colors">Browse listings →</Link>
+                <Link
+                  href="/listings"
+                  className="text-xs text-rose-100 hover:text-white transition-colors"
+                >
+                  Browse listings →
+                </Link>
               </div>
             </div>
           </div>
@@ -708,7 +1064,10 @@ function BuyerDashboard() {
               <h2 className="text-base font-semibold text-gray-800 flex items-center gap-2">
                 <Heart size={16} className="text-rose-500" /> Recent Favorites
               </h2>
-              <Link href="/favorites" className="text-sm font-medium text-rose-500 hover:text-rose-600 transition-colors">
+              <Link
+                href="/favorites"
+                className="text-sm font-medium text-rose-500 hover:text-rose-600 transition-colors"
+              >
                 View all →
               </Link>
             </div>
@@ -718,7 +1077,9 @@ function BuyerDashboard() {
                 <Heart size={36} className="text-gray-200 mx-auto mb-2" />
                 <p className="text-sm text-gray-500">No favorites yet</p>
                 <Link href="/listings">
-                  <Button size="sm" className="mt-3">Browse Pets</Button>
+                  <Button size="sm" className="mt-3">
+                    Browse Pets
+                  </Button>
                 </Link>
               </div>
             ) : (
@@ -731,20 +1092,35 @@ function BuyerDashboard() {
                   >
                     <div className="relative h-14 w-14 shrink-0 rounded-xl overflow-hidden bg-rose-50">
                       {fav.mainImageUrl ? (
-                        <Image src={fav.mainImageUrl} alt={fav.listingTitle} fill className="object-cover" sizes="56px" />
+                        <Image
+                          src={fav.mainImageUrl}
+                          alt={fav.listingTitle}
+                          fill
+                          className="object-cover"
+                          sizes="56px"
+                        />
                       ) : (
-                        <div className="flex h-full items-center justify-center text-xl">🐾</div>
+                        <div className="flex h-full items-center justify-center text-xl">
+                          🐾
+                        </div>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{fav.listingTitle}</p>
-                      <p className="text-sm font-bold text-rose-500 mt-0.5">{formatPrice(fav.listingPrice)}</p>
+                      <p className="text-sm font-semibold text-gray-900 truncate">
+                        {fav.listingTitle}
+                      </p>
+                      <p className="text-sm font-bold text-rose-500 mt-0.5">
+                        {formatPrice(fav.listingPrice)}
+                      </p>
                       <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-                        <MapPin size={10} />{fav.listingCity}
+                        <MapPin size={10} />
+                        {fav.listingCity}
                       </p>
                     </div>
-                    {fav.listingStatus !== 'Active' && (
-                      <span className="shrink-0 text-xs text-orange-500 font-medium">{fav.listingStatus}</span>
+                    {fav.listingStatus !== "Active" && (
+                      <span className="shrink-0 text-xs text-orange-500 font-medium">
+                        {fav.listingStatus}
+                      </span>
                     )}
                   </Link>
                 ))}
@@ -756,18 +1132,27 @@ function BuyerDashboard() {
           <section>
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-base font-semibold text-gray-800 flex items-center gap-2">
-                <MessageCircle size={16} className="text-blue-500" /> Recent Inquiries
+                <MessageCircle size={16} className="text-blue-500" /> Recent
+                Inquiries
               </h2>
-              <Link href="/inquiries" className="text-sm font-medium text-rose-500 hover:text-rose-600 transition-colors">
+              <Link
+                href="/inquiries"
+                className="text-sm font-medium text-rose-500 hover:text-rose-600 transition-colors"
+              >
                 View all →
               </Link>
             </div>
 
             {inquiries.length === 0 ? (
               <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-8 text-center">
-                <MessageCircle size={36} className="text-gray-200 mx-auto mb-2" />
+                <MessageCircle
+                  size={36}
+                  className="text-gray-200 mx-auto mb-2"
+                />
                 <p className="text-sm text-gray-500">No inquiries yet</p>
-                <p className="text-xs text-gray-400 mt-1">Contact a seller from any listing page</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Contact a seller from any listing page
+                </p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -781,19 +1166,35 @@ function BuyerDashboard() {
                     >
                       <div className="relative h-12 w-12 shrink-0 rounded-xl overflow-hidden bg-rose-50">
                         {inq.listingMainImageUrl ? (
-                          <Image src={inq.listingMainImageUrl} alt={inq.listingTitle} fill className="object-cover" sizes="48px" />
+                          <Image
+                            src={inq.listingMainImageUrl}
+                            alt={inq.listingTitle}
+                            fill
+                            className="object-cover"
+                            sizes="48px"
+                          />
                         ) : (
-                          <div className="flex h-full items-center justify-center text-lg">🐾</div>
+                          <div className="flex h-full items-center justify-center text-lg">
+                            🐾
+                          </div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">{inq.listingTitle}</p>
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                          {inq.listingTitle}
+                        </p>
                         {lastMsg ? (
-                          <p className="text-xs text-gray-500 truncate mt-0.5">{lastMsg.senderName}: {lastMsg.message}</p>
+                          <p className="text-xs text-gray-500 truncate mt-0.5">
+                            {lastMsg.senderName}: {lastMsg.message}
+                          </p>
                         ) : (
-                          <p className="text-xs text-gray-400 mt-0.5">No messages yet</p>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            No messages yet
+                          </p>
                         )}
-                        <p className="text-xs text-gray-400 mt-0.5">{formatDate(inq.createdAt)}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {formatDate(inq.createdAt)}
+                        </p>
                       </div>
                     </Link>
                   );
@@ -804,16 +1205,24 @@ function BuyerDashboard() {
 
           {/* Quick Actions */}
           <section className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
-            <h2 className="text-base font-semibold text-gray-800 mb-3">Quick Actions</h2>
+            <h2 className="text-base font-semibold text-gray-800 mb-3">
+              Quick Actions
+            </h2>
             <div className="flex flex-wrap gap-2">
               <Link href="/listings">
-                <Button><Search size={15} /> Browse Pets</Button>
+                <Button>
+                  <Search size={15} /> Browse Pets
+                </Button>
               </Link>
               <Link href="/favorites">
-                <Button variant="outline"><Heart size={15} /> My Favorites</Button>
+                <Button variant="outline">
+                  <Heart size={15} /> My Favorites
+                </Button>
               </Link>
               <Link href="/inquiries">
-                <Button variant="outline"><MessageCircle size={15} /> My Inquiries</Button>
+                <Button variant="outline">
+                  <MessageCircle size={15} /> My Inquiries
+                </Button>
               </Link>
             </div>
           </section>
@@ -831,8 +1240,8 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
-      <ProtectedRoute allowedRoles={['Buyer', 'Seller']}>
-        {user?.role === 'Seller' ? <SellerDashboard /> : <BuyerDashboard />}
+      <ProtectedRoute allowedRoles={["Buyer", "Seller"]}>
+        {user?.role === "Seller" ? <SellerDashboard /> : <BuyerDashboard />}
       </ProtectedRoute>
       <Footer />
     </div>
