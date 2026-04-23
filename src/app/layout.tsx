@@ -21,7 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Toaster
             position="top-right"
             toastOptions={{
-              duration: 5000,
+              duration: 3000,
               style: { borderRadius: '12px', fontSize: '14px' },
               success: { iconTheme: { primary: '#f43f5e', secondary: '#fff' } },
             }}
