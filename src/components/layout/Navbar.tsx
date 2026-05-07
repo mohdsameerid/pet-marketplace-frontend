@@ -85,8 +85,8 @@ export function Navbar() {
                   )}
                 </Link>
 
-                {/* Dashboard — Sellers and Admins */}
-                {(user?.role === 'Seller' || user?.role === 'Admin') && (
+                {/* Dashboard — all authenticated roles */}
+                {(user?.role === 'Buyer' || user?.role === 'Seller' || user?.role === 'Admin') && (
                   <Link href="/dashboard" className={iconLink('/dashboard')} title="Dashboard">
                     <LayoutDashboard size={20} />
                   </Link>
@@ -212,7 +212,7 @@ export function Navbar() {
                   <span className="rounded-full bg-rose-500 px-1.5 py-0.5 text-xs text-white">{unreadCount}</span>
                 )}
               </Link>
-              {(user?.role === 'Seller' || user?.role === 'Admin') && (
+              {(user?.role === 'Buyer' || user?.role === 'Seller' || user?.role === 'Admin') && (
                 <Link
                   href="/dashboard"
                   onClick={() => setMobileOpen(false)}
