@@ -138,6 +138,15 @@ function ProfileContent() {
               )}
               {profile.role === 'Buyer' && (
                 <Link
+                  href="/dashboard"
+                  className="flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+                >
+                  <LayoutDashboard size={16} />
+                  My Dashboard
+                </Link>
+              )}
+              {profile.role === 'Buyer' && (
+                <Link
                   href="/favorites"
                   className="flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600 transition-colors"
                 >
